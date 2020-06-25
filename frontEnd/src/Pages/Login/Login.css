@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap');
+
+/*
+    Cores azul principais
+    nome: light-blue darken-4
+    código: #01579b
+    
+    Cores azul secundaria
+    nome: blue darken-2
+    código: #01345C
+*/
+
+input, button {
+    font: 400 16px Roboto, sans-serif !important;
+}
+
+i {
+    color: white;
+}
+
+strong {
+    font: 400 20px Roboto, sans-serif !important;
+    color: white !important; 
+}
+
+.input-text {
+    width: 100% !important;
+    padding: 5px;
+    height: 45px !important;
+    color: white !important;
+    background-color: #01345C !important;
+    border: 1px solid #01345C !important;
+    border-radius: 8px 8px 0px 0px !important;    
+}
+
+.type-h5 {
+    font: 400 20px Roboto, sans-serif !important;
+    text-align: center !important;
+    color: white !important;
+}
+
+.type-h6 {
+    font: 400 11px Roboto, sans-serif !important;
+    text-align: center !important;
+    color: white !important;
+}
+
+.button {
+    font: 400 20px Roboto, sans-serif !important;
+    background-color: white !important;
+    color: #01345C !important;
+    width: 100% !important;
+    height: 40px !important;
+    margin-top: 15px !important;
+}
+
+#container-principal {
+    border-radius: 10px 10px 10px 10px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#paper {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+}
+
+::-webkit-input-placeholder {
+    color: white;
+ }
+ 
+ :-moz-placeholder { /* Firefox 18- */
+    color: white;  
+ }
+ 
+ ::-moz-placeholder {  /* Firefox 19+ */
+    color: white;  
+ }
+ 
+ :-ms-input-placeholder {  
+    color: white;  
+ }

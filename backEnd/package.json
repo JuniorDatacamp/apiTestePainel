@@ -1,0 +1,40 @@
+{
+  "name": "serverpaineldc",
+  "version": "2.0.0",
+  "description": "API em node.js e POSTGRESQL para controle de clientes Datacamp",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "npm prune",
+    "start": "node index"
+  },
+  "keywords": [
+    "DATACAMP",
+    "SERVER",
+    "PAINELDC",
+    "NODE.JS",
+    "POSTGRESQL"
+  ],
+  "author": "DATACAMP",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
+    "crypto-gcm": "0.0.9",
+    "express": "^4.17.1",
+    "helmet": "^3.21.3",
+    "jwt-simple": "^0.5.5",
+    "moment": "^2.22.2",
+    "nodemailer": "^6.4.6",
+    "pg": "^8.0.3",
+    "pg-format": "^1.0.4",
+    "request": "^2.88.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  },
+  "engines": {
+    "node": "^10.0.0",
+    "npm": "^6.9.0"
+  }
+}
