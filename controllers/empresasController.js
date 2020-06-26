@@ -3,8 +3,10 @@ const empresasModel = require('../models/empresasModel');
 module.exports = {    
 
     get (request, response){
+
+        const { params } = request.params;
         
-        empresasModel.get()
+        empresasModel.get(params)
         .then(
             (resultados) => {
      
@@ -60,9 +62,9 @@ module.exports = {
     
     delete (request, response){
 
-        const { id } = request.params;
+        const { params } = request.params;
 
-        empresasModel.delete(id)
+        empresasModel.delete(params)
         .then(
             (resultados) => {
      

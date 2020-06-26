@@ -8,8 +8,10 @@ const sqlEmpresas =
             emp_url as url, emp_nivel as nivel 
         from 
             empresas
+        where
+            emp_nome ilike $1
         order by
-            emp_nome
+            emp_nome    
     `;
 
 const sqlOrderby =
@@ -44,13 +46,15 @@ const sqlLogin =
 
 module.exports = {
     
-    get (request, response){
+    get (nomeEmpresa){
 
         return new Promise((resolve, reject) => {
 
+            const empNome = (nomeEmpresa) ? '%'+nomeEmpresa+'%' : '%';
+
             const ConexaoBanco = Configuracao.conexao;
 
-            ConexaoBanco.query(sqlEmpresas, (error, results) => {
+            ConexaoBanco.query(sqlEmpresas, [empNome], (error, results) => {
 
                 if (error){
                     return reject('Erro ao consultar empresas no banco de dados.' + error);

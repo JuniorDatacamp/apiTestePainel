@@ -55,11 +55,11 @@ module.exports = {
                 const nivelUsuario = decoded.iss.nivel;
     
                 // - usamos o resultado do jwt.decode() para verificar se o token expirou.
-                if (decoded.exp <= Date.now()) {
+                if (decoded.exp <= Date.now()) {                    
                     res.status(401).json({codigo: 401.001, mensagem: 'Acesso Expirado, faça login novamente'});
-                }
-                
-                return next();
+                }else{
+                    return next();
+                }                
     
             // - Caso aconteça algum erro
             } catch (err) {

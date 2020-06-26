@@ -6,7 +6,12 @@ module.exports = {
 
     get (request, response){
 
-        usuariosModel.get()
+        const { authorization } = request.headers;
+        const { params } = request.params;
+
+        const codEmpresa = jwtController.getUsuarioToken(authorization).codigo;
+
+        usuariosModel.get(codEmpresa, params)
         .then(
             (resultados) => {
      
@@ -89,9 +94,9 @@ module.exports = {
     
     delete (request, response){
 
-        const { id } = request.params;
+        const { params } = request.params;
 
-        usuariosModel.delete(id)
+        usuariosModel.delete(params)
         .then(
             (resultados) => {
      

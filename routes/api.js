@@ -15,11 +15,12 @@ router.route('/configuracoes/:id')
 	.delete(jwtController.validarToken, jwtController.validarAdmin, configuracoesController.delete)
 
 router.route('/empresas')
-	.get(jwtController.validarToken, jwtController.validarAdmin, empresasController.get)
+	.get(jwtController.validarToken, jwtController.validarAdmin, empresasController.get)	
 	.post(jwtController.validarToken, jwtController.validarAdmin, empresasController.insert)
 	.put(jwtController.validarToken, jwtController.validarAdmin, empresasController.edit)
 
-router.route('/empresas/:id')
+router.route('/empresas/:params')
+	.get(jwtController.validarToken, jwtController.validarAdmin, empresasController.get)
 	.delete(jwtController.validarToken, jwtController.validarAdmin,empresasController.delete)
 
 router.route('/usuarios')
@@ -27,7 +28,8 @@ router.route('/usuarios')
 	.post(jwtController.validarToken, usuariosController.insert)
 	.put(jwtController.validarToken, usuariosController.edit)
 
-router.route('/usuarios/:id')
+router.route('/usuarios/:params')
+	.get(jwtController.validarToken, usuariosController.get)
 	.delete(jwtController.validarToken, usuariosController.delete)
 
 // retornando router

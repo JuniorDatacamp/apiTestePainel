@@ -7,7 +7,9 @@ const sqlUsuarios =
             usa_codigo_acesso as codacesso, usa_datahora_codigo as datahoracodigo, emp_id as codempresa, 
             usa_codigo_vendedor as codvendedor, usa_token as token, usa_ativo as ativo
         from
-	        usuarios_autorizados
+            usuarios_autorizados
+        where
+            emp_id = $1 and usa_nome ilike $2
     `;
 
 const sqlOrderby =
@@ -85,13 +87,15 @@ const sqlLogout =
 
 module.exports = {
     
-    get (request, response){
+    get (codEmpresa, nomeUsuario){
 
         return new Promise((resolve, reject) => {
 
             const ConexaoBanco = Configuracao.conexao;
 
-            ConexaoBanco.query(sqlUsuarios, (error, results) => {
+            const usaNome = (nomeUsuario) ? '%'+nomeUsuario+'%' : '%';
+
+            ConexaoBanco.query(sqlUsuarios, [codEmpresa, usaNome], (error, results) => {
 
                 if (error){
                     return reject('Erro ao consultar usuário no banco de dados.' + error);
