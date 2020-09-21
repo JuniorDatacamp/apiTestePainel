@@ -62,11 +62,12 @@ const typesBD = {
 };
 
 const pg = require('pg');
+const format = require('pg-format');
 
 //converter todos numeric do banco de dados para float ou int.
 //Foi preciso essa conversão, pois o javascript retorna como string numeros acima de 32 bits.
 
-process.env.TZ = 'America/Sao_Paulo';
+process.env.TZ = "America/Sao_Paulo";
 
 pg.types.setTypeParser(typesBD.NUMERIC, parseFloat);
 pg.types.setTypeParser(typesBD.INT8, parseInt);
@@ -77,14 +78,11 @@ pg.types.setTypeParser(typesBD.TIMESTAMP, function(stringValue) {
     return new Date(Date.parse(stringValue + "+0000"))
 });
 
-// pg.defaults.parseInputDatesAsUTC = true;
-
 function createPool() {
 
     //variaveis de ambiente para configuração de acesso aos dados.
     const hostApi = (process.env.BD_HOST_API);
     const databaseApi = (process.env.BD_BASE_API);
-    // const databaseApi = 'painel';
     const bdUserApi = (process.env.BD_USER_API);
     const bdKeyApi = (process.env.BD_KEY_API);    
 
@@ -95,10 +93,13 @@ function createPool() {
         user: bdUserApi,
         password: bdKeyApi,
         ssl: false
-    };     
+        // ,
+        // statement_timeout: 30000,
+        // query_timeout: 30000
+    }; 
 
     const pool = new pg.Pool(config)
-
+  
     pool.on("error", function(err, client) {
         console.error("**Falha ao tentar conectar com banco de dados da api.** ", err.message, err.stack);
     });
@@ -106,4 +107,84 @@ function createPool() {
     return pool;
 };
 
-exports.conexao = createPool();
+exports.conexao       = createPool();
+
+exports.formatSql = function formatSql(tipoSql, tabela, obj, parametro){
+
+    /*  Como utilizar a função com exemplo do obj do contas a receber.
+        "parametro" = vazio, retorna na query sem where ou sem returning.
+
+        ** insert **
+        var dadosInsert = Configuracao.formatSql('insert', objReceber, 'returning rec_uuid');
+        var textSql = dadosSqlReceber.sqlText;
+        var params = dadosSqlReceber.valorParametro;
+
+        ** update **
+        var dadosUpdate = Configuracao.formatSql('update', objReceber, 'rec_uuid');
+        var textSql = dadosSqlReceber.sqlText;
+        var params = dadosSqlReceber.valorParametro;        
+    */
+
+    var colunas = [];
+    // var valorColuna = [];
+    var paramsWhere;
+    var i;
+
+    for (i in obj[0]){
+
+        if (obj[0][i] != null || tipoSql == 'update'){
+            colunas.push(i);
+        }
+    };
+
+    var valorColuna = obj.map(function(obj) {
+        return Object.keys(obj).map(function(chave) {
+            return obj[chave];
+        });
+    });
+
+    switch (tipoSql){
+        
+        case 'insert':
+            var sqlValues = [];
+            
+            colunas.forEach(function (item, indice, array) {
+
+                //parametro da query sempre iniciar com 1.
+                indice = indice + 1;
+                //adicionando numeros de parametros da query.
+                sqlValues.push('$'+indice);
+            });
+            
+            // var sqlPronto = 'insert into '+ tabela + ' ('+ colunas +') values ('+ sqlValues +') ' + parametro;
+            var sqlPronto = 'insert into '+ tabela + ' ( '+ colunas +' ) values %L ' + parametro;
+            var sqlPronto = format(sqlPronto, valorColuna);
+
+            const objInsert = {sqlText: sqlPronto, valorParametro: valorColuna};
+            
+            return objInsert;
+
+        case 'update':
+            var colunasUpdate = [];
+
+            colunas.forEach(function (item, indice, array) {
+
+                //parametro da query sempre iniciar com 1.
+                indice = indice + 1;
+                //adicionando numeros de parametros da query.
+        
+                if (item == parametro){
+                    paramsWhere = item + '= $'+indice;
+                }else{
+                    colunasUpdate.push(item + '= $'+indice);
+                }
+            });
+            
+            var sqlPronto = 'update '+ tabela +' set '+ colunasUpdate + ' where ' + paramsWhere;
+            
+            const objUpdate = {sqlText: sqlPronto, valorParametro: valorColuna[0]};
+            return objUpdate;
+
+        default: return '';
+    }
+}
