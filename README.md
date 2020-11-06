@@ -29,4 +29,4 @@ Configuração de painel:
 3 - Rodar o comando nodemon. Pronto, servidor rodando!
 
 Link documentação das rotas.
-https://documenter.getpostman.com/view/6708304/SzfCUm3f?version=latest
+https://documenter.getpostman.com/view/6708304/SzzdCfso

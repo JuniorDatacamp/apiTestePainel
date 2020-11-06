@@ -14,6 +14,7 @@ const sqlVendasApp =
             ven_uuid, ped_id, vdd_id, tpg_id, ven_data,
             ven_total, ven_tipo, ven_situacao, ven_observacao, 
             ven_tipo_venda, ven_urgente, ven_dt_entrega,
+            x.tpp_id, tpp_nome,
             case
                 when ven_id isnull then 'N'
             else 'S'
@@ -27,20 +28,42 @@ const sqlVendasApp =
                 v.*
                 from
             venda v) x
+        left join
+            tipos_pedido t on x.tpp_id = t.tpp_id
         where
-            x.r <= 10 and vdd_id = $1  `;
+            x.r <= 10 and (cast(vdd_id as varchar(10)) ilike $1)  `;
+
+const sqlVendaDuplicada =
+    `   select
+            ven_uuid, cli_id, cli_uuid, ped_id, vdd_id, tpg_id, ven_data,
+            ven_total, ven_tipo, ven_situacao, ven_observacao, 
+            ven_tipo_venda, ven_urgente, ven_dt_entrega,
+            v.tpp_id, tpp_nome,
+            case
+                when ven_id isnull then 'N'
+            else 'S'
+            end as recebimento,
+            'S' as enviado,
+            ven_cod_verificador,
+            (select json_agg(ValorJson) from vw_agruparitemvendaJSON where ven_uuid = v.ven_uuid group by ven_uuid) as itemvendas           
+        from 
+            venda v
+        left join
+            tipos_pedido t on v.tpp_id = t.tpp_id    
+        where
+            ven_cod_verificador = $1 `;
 
 const textQueryInsertApp =
     "   INSERT INTO venda(  "+
     "       cli_uuid, cli_id, vdd_id, tpg_id, ven_data,   "+
     "       ven_total, ven_observacao, ven_tipo, ven_tipo_venda, ven_urgente,  "+
-    "       ven_dt_entrega, ven_desconto, ven_situacao "+
+    "       ven_dt_entrega, ven_desconto, ven_situacao, ven_cod_verificador, tpp_id "+
     "   )       "+
     "   VALUES      "+
     "   (       "+ 
     "       $1, $2, $3, $4, $5, "+
     "       $6, $7, $8, $9, $10, "+
-    "       $11, $12, $13  "+
+    "       $11, $12, $13, $14, $15  "+
     "   ) RETURNING ven_uuid, ped_id; "
 
 const sqlVendas =
@@ -92,13 +115,38 @@ exports.getVendasApp = function(package){
     return new Promise((resolve, reject) => {        
 
         const ConexaoBanco = Configuracao.conexao;
+        var params;
 
-        console.log('Consultando vendas...');        
-        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [package.codVendedor], (error, results) => {
+        (package.vinculoClientesVendedor) ? params = package.codVendedor : params = '%';
+
+        console.log('Consultando vendas...');
+        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [params], (error, results) => {
         
             if (error){
+                console.log('Erro ao consultar vendas app...');
                 return reject(error);
             }else{  
+                const venda = results.rows;
+                return resolve(venda);
+            }
+        });
+    });
+};
+
+exports.getVendaDuplicadasApp = function(ven_cod_verificador){
+    
+    return new Promise((resolve, reject) => {        
+
+        const ConexaoBanco = Configuracao.conexao;
+
+        console.log('Consultando venda duplicada...');
+        ConexaoBanco.query(sqlVendaDuplicada, [ven_cod_verificador], (error, results) => {
+        
+            if (error){
+                console.log('Erro ao consultar venda duplicada...');
+                return reject('Erro ao consultar venda duplicada...'+error);
+            }else{ 
+                console.log('Venda duplicada retornada com sucesso...'); 
                 const venda = results.rows;
                 return resolve(venda);
             }
@@ -114,16 +162,22 @@ exports.insertApp = function insertApp(ObjVendas){
         const ConexaoBanco = Configuracao.conexao;
         var resultVenda;
 
+        //Gambiarra por causa da retaguarda, trocou o campo por uma tabela.
+        aVenda.ven_tipo_venda = 'P';
+
         ConexaoBanco.query(textQueryInsertApp, [
             aVenda.cli_uuid, aVenda.cli_id, aVenda.vdd_id, aVenda.tpg_id, 
             aVenda.ven_data, aVenda.ven_total, aVenda.ven_observacao, aVenda.ven_tipo, aVenda.ven_tipo_venda, 
-            aVenda.ven_urgente, aVenda.ven_dt_entrega, aVenda.ven_desconto, 'P'
+            aVenda.ven_urgente, aVenda.ven_dt_entrega, aVenda.ven_desconto, 'P', aVenda.ven_cod_verificador,
+            aVenda.tpp_id
         ], (error, results) => {
 
             if (error){
-                console.log(error);
-                resultVenda = {mensagem: "Erro ao gravar a venda.", error: error};
-                return reject(resultVenda);
+                console.log('Erro ao gravar Venda.', error);
+
+                const erroVenda = [error, aVenda];
+                
+                return reject(erroVenda);
             }
             else{
                 resultVenda         = {ven_uuid: results.rows[0].ven_uuid, ped_id: results.rows[0].ped_id};                    
