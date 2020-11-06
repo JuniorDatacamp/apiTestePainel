@@ -187,4 +187,4 @@ exports.formatSql = function formatSql(tipoSql, tabela, obj, parametro){
 
         default: return '';
     }
-}
+}  
