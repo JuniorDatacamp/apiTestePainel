@@ -28,7 +28,7 @@ const sqlVendasApp =
                 from
             venda v) x
         where
-            x.r <= 10 and (cast(vdd_id as varchar(10)) ilike $1)  `;
+            x.r <= 10 and vdd_id = $1  `;
 
 const textQueryInsertApp =
     "   INSERT INTO venda(  "+
@@ -92,12 +92,9 @@ exports.getVendasApp = function(package){
     return new Promise((resolve, reject) => {        
 
         const ConexaoBanco = Configuracao.conexao;
-        var params;
-
-        (package.vinculoClientesVendedor) ? params = package.codVendedor : params = '%';
 
         console.log('Consultando vendas...');        
-        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [params], (error, results) => {
+        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [package.codVendedor], (error, results) => {
         
             if (error){
                 return reject(error);

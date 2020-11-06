@@ -61,21 +61,21 @@ exports.validarTokenApp = function(req, res, next){
 
     // /* Recuperando se existe usuário com login na base de dados do painel de gerenciamento de licença. */
 
-    const hostname = process.env.HOST_PAINEL;
-    const path = '/painel/verificausuario/'+objToken.token;
+    // const hostname = process.env.HOST_PAINEL;
+    // const path = '/painel/verificausuario/'+objToken.token;
 
-    requestServer.post(`${hostname}${path}`, (err, respServer, body) => {
+    // requestServer.post(`${hostname}${path}`, (err, respServer, body) => {
 
-        if (err){
-            res.status(500).json({ mensagem: `Erro ao verificar usuário no painel de licença! [ ${err} ]` });
-        };
+    //     if (err){
+    //         res.status(500).json({ mensagem: `Erro ao verificar usuário no painel de licença! [ ${err} ]` });
+    //     };
 
-        if (respServer.statusCode !== 200){   
-            res.status(401).json(JSON.parse(body));
-        }else{
+    //     if (respServer.statusCode !== 200){   
+    //         res.status(401).json(JSON.parse(body));
+    //     }else{
             validarUsuario(objToken, res, next);
-        }
-    });
+    //     }
+    // });    
 };
 
 exports.validarTokenRetaguarda = function(req, res, next){
