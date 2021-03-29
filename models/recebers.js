@@ -1,6 +1,7 @@
 const Configuracao = require('../config/database');
 const format = require('pg-format');
 const uuidv1 = require('uuid/v1');
+const { documentosExistentes } = require('./clientes');
 
 const sqlReceberApp =
     `   select 
@@ -11,7 +12,7 @@ const sqlReceberApp =
         inner join 
             clientes c on r.cli_uuid = c.cli_uuid    
         where 
-            valorareceber > 0 and (cast(c.vdd_id as varchar(10)) ilike $1)
+            doctosubstituicao is null and valorareceber > 0 and (cast(c.vdd_id as varchar(10)) ilike $1)
     `;
 
 const sqlReceber =
@@ -177,7 +178,7 @@ exports.delete = function(idReceber){
             }
             else{
                 return resolve({
-                    mensagem: 'Delete receber efetuado com sucesso.',
+                    mensagem: 'Delete receber efetuado com sucesso. UUID: '+idReceber,
                     registros: results.rowCount
                 });
             }
@@ -185,58 +186,49 @@ exports.delete = function(idReceber){
     });    
 };
 
-exports.update = function(objReceber){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function(objReceber){    
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objReceber.length; ++i){
+            
+            docAtualizados.push(objReceber[i].rec_uuid);
 
-    objReceber.forEach(element => {
+            const res = await client.query(updateReceber, [
+                objReceber[i].rec_uuid, objReceber[i].documento, objReceber[i].clf_id, objReceber[i].tip_id, objReceber[i].loc_id, objReceber[i].cli_id, 
+                objReceber[i].vdd_id, objReceber[i].ven_id, objReceber[i].ven_data, objReceber[i].sai_numnota, objReceber[i].sse_nronota, 
+                objReceber[i].codigoboleta, objReceber[i].tipopagamento, objReceber[i].datalancamento, objReceber[i].dataemissao, 
+                objReceber[i].datavencimento, objReceber[i].datarecebimento, objReceber[i].valorareceber, objReceber[i].valororiginal, 
+                objReceber[i].valorrecebido, objReceber[i].valordevolvido, objReceber[i].juros, objReceber[i].desconto, objReceber[i].perccomissao, 
+                objReceber[i].doctosubstituicao, objReceber[i].observacao, objReceber[i].baixado, objReceber[i].duplicatadescontada, 
+                objReceber[i].situacao, objReceber[i].mes_coo, objReceber[i].valorcorrigido, objReceber[i].datadevolucao, objReceber[i].cheque_pre, 
+                objReceber[i].tur_id, objReceber[i].rec_hora, objReceber[i].auxilia, objReceber[i].os_id, objReceber[i].os_data, objReceber[i].rec_banco,
+                objReceber[i].rec_agencia, objReceber[i].rec_conta, objReceber[i].rec_emitente, objReceber[i].sai_id, objReceber[i].rec_idsubstituicao,
+                objReceber[i].devolucao, objReceber[i].bol_situacao, objReceber[i].dt_primeiro_vencto, objReceber[i].rec_numcheque, objReceber[i].rec_pedido, 
+                objReceber[i].correcao, objReceber[i].dt_vencto_ini, objReceber[i].cre_id, objReceber[i].rec_duplicata_impressa, 
+                objReceber[i].rec_baixa_via_pdv_id, objReceber[i].ser_id, objReceber[i].rec_data_duplicata, objReceber[i].rec_mensagem_consorcio, 
+                objReceber[i].chc_id, objReceber[i].rec_nossonumero, objReceber[i].nfs_id, objReceber[i].con_id, objReceber[i].rec_tx_adesao, objReceber[i].ban_id, 
+                objReceber[i].rec_spc, objReceber[i].rec_serasa, objReceber[i].tpg_id, objReceber[i].rec_parcela, objReceber[i].rec_liquidado, objReceber[i].mes_data, 
+                objReceber[i].pdv_id, objReceber[i].cli_uuid, objReceber[i].ven_uuid
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateReceber, [
-                    element.rec_uuid, element.documento, element.clf_id, element.tip_id, element.loc_id, element.cli_id, 
-                    element.vdd_id, element.ven_id, element.ven_data, element.sai_numnota, element.sse_nronota, 
-                    element.codigoboleta, element.tipopagamento, element.datalancamento, element.dataemissao, 
-                    element.datavencimento, element.datarecebimento, element.valorareceber, element.valororiginal, 
-                    element.valorrecebido, element.valordevolvido, element.juros, element.desconto, element.perccomissao, 
-                    element.doctosubstituicao, element.observacao, element.baixado, element.duplicatadescontada, 
-                    element.situacao, element.mes_coo, element.valorcorrigido, element.datadevolucao, element.cheque_pre, 
-                    element.tur_id, element.rec_hora, element.auxilia, element.os_id, element.os_data, element.rec_banco,
-                    element.rec_agencia, element.rec_conta, element.rec_emitente, element.sai_id, element.rec_idsubstituicao,
-                    element.devolucao, element.bol_situacao, element.dt_primeiro_vencto, element.rec_numcheque, element.rec_pedido, 
-                    element.correcao, element.dt_vencto_ini, element.cre_id, element.rec_duplicata_impressa, 
-                    element.rec_baixa_via_pdv_id, element.ser_id, element.rec_data_duplicata, element.rec_mensagem_consorcio, 
-                    element.chc_id, element.rec_nossonumero, element.nfs_id, element.con_id, element.rec_tx_adesao, element.ban_id, 
-                    element.rec_spc, element.rec_serasa, element.tpg_id, element.rec_parcela, element.rec_liquidado, element.mes_data, 
-                    element.pdv_id, element.cli_uuid, element.ven_uuid
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Receber atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;    
-};
+        console.log('Receber atualizado com sucesso! UUID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
+}
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

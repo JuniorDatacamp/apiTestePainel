@@ -1,4 +1,5 @@
-const objItemVenda = require('../controllers/itemVendasController').itemVenda;
+// const objItemVenda = require('../controllers/itemVendasController').itemVenda;
+const objItemVenda = require('../models/itemVendas').itemVenda;
 const itemVendaModel = require('../models/itemVendas');
 const format = require('pg-format');
 /*
@@ -8,10 +9,36 @@ const format = require('pg-format');
     coluna "recebimento" por ser 'S' quando ven_id = null ou ven_situacao = 'P'
 */
 
+//Vendas para App
+class venda {
+        
+    constructor(obj) {
+        this.ven_uuid       = obj.ven_uuid,
+        this.ped_id         = obj.ped_id,
+        this.vdd_id         = obj.vdd_id, 
+        this.tpg_id         = obj.tpg_id,
+        this.ven_data       = obj.ven_data,
+        this.ven_total      = obj.ven_total, 
+        this.ven_tipo       = obj.ven_tipo, 
+        this.ven_situacao   = obj.ven_situacao, 
+        this.ven_observacao = obj.ven_observacao, 
+        this.ven_tipo_venda = obj.ven_tipo_venda, 
+        this.ven_urgente    = obj.ven_urgente, 
+        this.ven_dt_entrega = obj.ven_dt_entrega,
+        this.tpp_id         = obj.tpp_id, 
+        this.tpp_nome       = obj.tpp_nome,
+        this.recebimento    = obj.recebimento,
+        this.enviado        = obj.enviado,
+        this.cli_uuid       = obj.cli_uuid, 
+        this.cli_id         = obj.cli_id,
+        this.itemvendas     = []
+    }
+};
+
 const Configuracao = require('../config/database');
 const sqlVendasApp = 
     `   select
-            ven_uuid, ped_id, vdd_id, tpg_id, ven_data,
+            x.ven_uuid, ped_id, x.vdd_id, tpg_id, x.ven_data,
             ven_total, ven_tipo, ven_situacao, ven_observacao, 
             ven_tipo_venda, ven_urgente, ven_dt_entrega,
             x.tpp_id, tpp_nome,
@@ -20,18 +47,23 @@ const sqlVendasApp =
             else 'S'
             end as recebimento,
             'S' as enviado,
-            (select json_agg(ValorJson) from vw_agruparitemvendaJSON where ven_uuid = x.ven_uuid group by ven_uuid) as itemvendas,
-            cli_uuid, cli_id
+            --(select json_agg(ValorJson) from vw_agruparitemvendaJSON where ven_uuid = x.ven_uuid group by ven_uuid) as itemvendas,
+            cli_uuid, cli_id,
+            itv_id, itv_descricao, itv_id, itv_uuid, pro_id, itv_refer, itv_descricao, itv_qtde,
+            itv_desconto, itv_precovenda, itv_valortotal, itv_data_inclusao, i.ven_data, itv_promocao            
         from 
             (select
                 row_number() over (partition by cli_uuid order by ped_id desc) as r,
                 v.*
                 from
             venda v) x
+        inner join
+            item_venda i on i.ven_uuid = x.ven_uuid
         left join
             tipos_pedido t on x.tpp_id = t.tpp_id
         where
-            x.r <= 3 and (cast(vdd_id as varchar(10)) ilike $1)  `;
+            x.r <= 10 and (cast(x.vdd_id as varchar(10)) ilike $1)
+    `;
 
 const sqlVendaDuplicada =
     `   select
@@ -114,7 +146,7 @@ const sqlOrderby =
 //utilizar para app
 exports.getVendasApp = function(package){
     
-    return new Promise((resolve, reject) => {        
+    return new Promise((resolve, reject) => {
 
         const ConexaoBanco = Configuracao.conexao;
         var params;
@@ -122,94 +154,129 @@ exports.getVendasApp = function(package){
         (package.vinculoClientesVendedor) ? params = package.codVendedor : params = '%';
 
         console.log('Consultando vendas...');
-        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [params], (error, results) => {
+        ConexaoBanco.query(sqlVendasApp+sqlOrderby, [params], (error, results) => {        
         
             if (error){
                 console.log('Erro ao consultar vendas app...');
                 return reject(error);
             }else{  
-                const venda = results.rows;
-                return resolve(venda);
-            }
+                let vendas = results.rows;
+                let uuid = null;
+                var vendasSemDuplicar = [];
+                var itemSemVenda = [];                
+                
+                vendas.forEach(function (iVendas, indice, arrayVendas) {
+
+                    if (indice === 0){
+                        uuid = iVendas.ven_uuid;
+                        vendasSemDuplicar.push(new venda(iVendas));
+                    }else{
+                        
+                        if(uuid == iVendas.ven_uuid){
+                            uuid = iVendas.ven_uuid                                    
+                        }else{
+                            uuid = iVendas.ven_uuid;
+                            vendasSemDuplicar.push(new venda(iVendas));
+                        }                                
+                    }                                
+                });                
+
+                vendas.forEach(function (iVendas, indice, arrayVendas) {
+                    itemSemVenda.push(objItemVenda(iVendas));
+                });
+
+                vendasSemDuplicar.forEach(function(VeObj){
+
+                    var itensVendas = itemSemVenda.filter(function(obj){                                                       
+
+                        if (VeObj.ven_uuid == obj.ven_uuid){
+                            return obj = objItemVenda(obj);
+                        }                         
+                    });
+
+                    VeObj.itemvendas = itensVendas;
+                });
+
+                return resolve(vendasSemDuplicar);
+            };            
         });
     });
 };
 
-exports.getVendaDuplicadasApp = function(ven_cod_verificador){
+exports.verificaVendaDuplicadasApp = function(ven_cod_verificador){
     
     return new Promise((resolve, reject) => {        
 
         const ConexaoBanco = Configuracao.conexao;
 
-        console.log('Consultando venda duplicada...');
         ConexaoBanco.query(sqlVendaDuplicada, [ven_cod_verificador], (error, results) => {
         
             if (error){
                 console.log('Erro ao consultar venda duplicada...');
                 return reject('Erro ao consultar venda duplicada...'+error);
-            }else{ 
-                console.log('Venda duplicada retornada com sucesso...'); 
-                const venda = results.rows;
-                return resolve(venda);
+            }else{
+
+                let vendaDup;
+
+                if (results.rowCount > 0){
+                    console.log('Retornando venda duplicada...');
+                    vendaDup = results.rows[0];
+                    return reject(vendaDup);
+                }else{
+                    vendaDup = 0;
+                    return resolve(vendaDup);
+                }
             }
         });
     });
 };
 
-exports.insertApp = function insertApp(ObjVendas){
-   
-    return new Promise((resolve, reject) => {
+exports.insertApp = async function insertApp(ObjVendas){
 
-        console.log('Gravando venda do aplicativo...', 'vendedor: ', ObjVendas.vdd_id, ObjVendas);
+    console.log('Gravando venda do aplicativo...', 'vendedor: ', ObjVendas.vdd_id, ObjVendas);
+    
+    const client = await Configuracao.conexao.connect();
 
-        const aVenda       = ObjVendas;        
-        const ConexaoBanco = Configuracao.conexao;
-        var resultVenda;
-
+    try {
+        const aVenda        = ObjVendas;
+        var arrayItemVenda  = [];
+    
+        ObjVendas.itemvendas.forEach(valor => {
+            arrayItemVenda.push(objItemVenda(valor));
+        });
+    
         //Gambiarra por causa da retaguarda, trocou o campo por uma tabela.
         aVenda.ven_tipo_venda = 'P';
 
-        ConexaoBanco.query(textQueryInsertApp, [
+        await client.query('BEGIN')       
+        
+        const res = await client.query(textQueryInsertApp, [
             aVenda.cli_uuid, aVenda.cli_id, aVenda.vdd_id, aVenda.tpg_id, 
             aVenda.ven_data, aVenda.ven_total, aVenda.ven_observacao, aVenda.ven_tipo, aVenda.ven_tipo_venda, 
             aVenda.ven_urgente, aVenda.ven_dt_entrega, aVenda.ven_desconto, 'P', aVenda.ven_cod_verificador,
             aVenda.tpp_id
-        ], (error, results) => {
+        ]);
 
-            if (error){
-                console.log('Erro ao gravar Venda do aplicativo.', ObjVendas, error);
-                const erroVenda = [error, aVenda];
-                return reject(erroVenda);
-            }
-            else{
-                console.log('Cabeçalho gravado com sucesso!', 'ven_uuid:', results.rows[0].ven_uuid, 'ped_id:', results.rows[0].ped_id, 'ven_cod_verificador:', aVenda.ven_cod_verificador);
+        let resultVenda;
+        resultVenda = {ven_uuid: res.rows[0].ven_uuid, ped_id: res.rows[0].ped_id};
+                
+        const sqlItem = itemVendaModel.SQLInsertApp(arrayItemVenda, resultVenda.ven_uuid);
+        //Inserindo itens
+        await client.query(sqlItem, []);
 
-                resultVenda         = {ven_uuid: results.rows[0].ven_uuid, ped_id: results.rows[0].ped_id};
-                var arrayItemVenda  = [];
+        console.log('Venda gravada com sucesso!', 'ven_uuid:', res.rows[0].ven_uuid, 'ped_id:', res.rows[0].ped_id, 'ven_cod_verificador:', aVenda.ven_cod_verificador);
 
-                try {
-
-                    ObjVendas.itemvendas.forEach(valor => {
-                        arrayItemVenda.push(objItemVenda(valor));
-                    });
-
-                } catch (error) {
-                    return reject('A requisição não está de acordo com o formato esperado. Verifique o JSON "itemvendas" no body que está sendo enviado.')
-                }
-
-                itemVendaModel.insertApp(arrayItemVenda, resultVenda.ven_uuid)
-                .then(
-                    (resultados) => {                        
-                        return resolve(resultVenda);                        
-                    },
-                    (rejeitado) => {                        
-                        resultVenda.mensagem = rejeitado;                        
-                        return reject(resultVenda.mensagem);
-                    }
-                )
-            }//else
-        });//venda
-    });//promise
+        await client.query('COMMIT');
+        //retornando para controller as vendas inseridas
+        return res.rows[0];
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
 
 exports.getVendas = function getVendas(parametro){
@@ -230,14 +297,17 @@ exports.getVendas = function getVendas(parametro){
     });
 };
 
-exports.insert = function insert(ObjVendas){
+exports.insert = async function insert(ObjVendas){    
 
-    return new Promise((resolve, reject) => {
-        
-        const ConexaoBanco  = Configuracao.conexao;
-        var paramsVenda     = [];
+    const client = await Configuracao.conexao.connect();
+
+    try {
+        let paramsVenda = [];
+        let docInclusos = [];
 
         ObjVendas.forEach(venda => {
+
+            docInclusos.push(venda.ven_id);
             
             paramsVenda.push([                
                 venda.ven_id, venda.ven_data, venda.cli_id, venda.cli_uuid, venda.vdd_id, venda.ven_tipo, venda.ven_vecto1, 
@@ -250,23 +320,26 @@ exports.insert = function insert(ObjVendas){
                 venda.ven_dt_finalizacao, venda.tpp_id, venda.ven_ender_entrega, venda.ven_num_bloco, venda.ven_motorista, 
                 venda.ven_contato, venda.ven_prazo_entrega, venda.ven_custo_bancario, venda.reg_id, venda.ven_cf_acertado
             ]);
-        });       
-
-        var sql = format(insertVenda, paramsVenda);
-       
-        ConexaoBanco.query(sql, (error, results) => {
-            
-            if (error){
-                console.log('Erro ao inserir venda(s). '+ error);
-                return reject(error);
-            }
-            else{
-                console.log('Venda(s) inserido com sucesso! Quantidade registros: ', results.rowCount);
-                var venda = results.rows;
-                return resolve(venda);
-            }
         });
-    });
+
+        var sqlInsertVenda = format(insertVenda, paramsVenda);
+        
+        await client.query('BEGIN')
+
+        const res = await client.query(sqlInsertVenda, []);
+
+        console.log('Venda(s) inserido com sucesso! Quantidade registros: ', res.rowCount, '\nIDs de venda(s)! VEN_ID:', docInclusos);
+        await client.query('COMMIT');
+        //retornando para controller as vendas inseridas
+        return res.rows;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
 
 exports.delete = function(idVenda){
@@ -282,6 +355,7 @@ exports.delete = function(idVenda){
                 return reject(error);
             }
             else{
+                console.log('Delete venda(s) efetuado com sucesso. ven_uui:', idVenda);                
                 return resolve({
                     mensagem: 'Delete venda(s) efetuado com sucesso.',
                     registros: results.rowCount
@@ -291,55 +365,44 @@ exports.delete = function(idVenda){
     });
 };
 
-exports.update = function update(ObjVendas){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjVendas){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjVendas.length; ++i){
+            
+            docAtualizados.push(ObjVendas[i].ven_id);
 
-    ObjVendas.forEach(venda => {
+            const res = await client.query(updateVenda, [
+                ObjVendas[i].ven_uuid, ObjVendas[i].ven_data, ObjVendas[i].cli_id, ObjVendas[i].cli_uuid, ObjVendas[i].vdd_id, ObjVendas[i].ven_tipo, 
+                ObjVendas[i].ven_vecto1, ObjVendas[i].ven_vecto2, ObjVendas[i].ven_vecto3, ObjVendas[i].ven_vecto4, ObjVendas[i].ven_vecto5, 
+                ObjVendas[i].ven_vecto6, ObjVendas[i].ven_vecto7, ObjVendas[i].ven_vecto8, ObjVendas[i].ven_vecto9, ObjVendas[i].ven_total, 
+                ObjVendas[i].ven_desconto, ObjVendas[i].ven_situacao, ObjVendas[i].ven_entrada, ObjVendas[i].trp_id, ObjVendas[i].ven_observacao, 
+                ObjVendas[i].mes_coo, ObjVendas[i].mes_data, ObjVendas[i].pdv_id, ObjVendas[i].baixado, ObjVendas[i].sai_numnota, ObjVendas[i].ven_outras, 
+                ObjVendas[i].tpg_id, ObjVendas[i].ven_pedido, ObjVendas[i].ven_vecto10, ObjVendas[i].ven_vecto11, ObjVendas[i].ven_vecto12, 
+                ObjVendas[i].ven_quantparcelas, ObjVendas[i].ven_diaparcelas, ObjVendas[i].pre_id, ObjVendas[i].ven_credito, ObjVendas[i].sai_id, 
+                ObjVendas[i].cag_id, ObjVendas[i].ped_hora, ObjVendas[i].ven_dt_entrega, ObjVendas[i].ven_urgente, ObjVendas[i].etg_id, 
+                ObjVendas[i].ven_dt_inclusao, ObjVendas[i].ven_tipo_venda, ObjVendas[i].ven_dt_finalizacao, ObjVendas[i].tpp_id, 
+                ObjVendas[i].ven_ender_entrega, ObjVendas[i].ven_num_bloco, ObjVendas[i].ven_motorista, ObjVendas[i].ven_contato, 
+                ObjVendas[i].ven_prazo_entrega, ObjVendas[i].ven_custo_bancario, ObjVendas[i].reg_id, ObjVendas[i].ven_cf_acertado, 
+                ObjVendas[i].ven_id
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateVenda, [
-                    venda.ven_uuid, venda.ven_data, venda.cli_id, venda.cli_uuid, venda.vdd_id, venda.ven_tipo, 
-                    venda.ven_vecto1, venda.ven_vecto2, venda.ven_vecto3, venda.ven_vecto4, venda.ven_vecto5, 
-                    venda.ven_vecto6, venda.ven_vecto7, venda.ven_vecto8, venda.ven_vecto9, venda.ven_total, 
-                    venda.ven_desconto, venda.ven_situacao, venda.ven_entrada, venda.trp_id, venda.ven_observacao, 
-                    venda.mes_coo, venda.mes_data, venda.pdv_id, venda.baixado, venda.sai_numnota, venda.ven_outras, 
-                    venda.tpg_id, venda.ven_pedido, venda.ven_vecto10, venda.ven_vecto11, venda.ven_vecto12, 
-                    venda.ven_quantparcelas, venda.ven_diaparcelas, venda.pre_id, venda.ven_credito, venda.sai_id, 
-                    venda.cag_id, venda.ped_hora, venda.ven_dt_entrega, venda.ven_urgente, venda.etg_id, 
-                    venda.ven_dt_inclusao, venda.ven_tipo_venda, venda.ven_dt_finalizacao, venda.tpp_id, 
-                    venda.ven_ender_entrega, venda.ven_num_bloco, venda.ven_motorista, venda.ven_contato, 
-                    venda.ven_prazo_entrega, venda.ven_custo_bancario, venda.reg_id, venda.ven_cf_acertado, 
-                    venda.ven_id
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Venda(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Venda atualizada com sucesso! VEN_ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };

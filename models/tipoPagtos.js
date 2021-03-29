@@ -156,50 +156,41 @@ exports.delete = function(idTipoPagto){
     });    
 };
 
-exports.update = function update(ObjTipoPagto){
+exports.update = async function update(ObjTipoPagto){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjTipoPagto.length; ++i){                            
+                
+            docAtualizados.push(ObjTipoPagto[i].tpg_id);
 
-    var arrayPromise = [];
+            const res = await client.query(updateTipoPagtos, [                    
+                ObjTipoPagto[i].tpg_id, ObjTipoPagto[i].tpg_descricao, ObjTipoPagto[i].tpg_pagamento, ObjTipoPagto[i].tpg_preco, ObjTipoPagto[i].tpg_desconto,
+                ObjTipoPagto[i].tpg_tipo, ObjTipoPagto[i].tpg_tipo_frete, ObjTipoPagto[i].tpg_liberado_cli_novo, ObjTipoPagto[i].tpg_custo_bancario,
+                ObjTipoPagto[i].tpg_parc1, ObjTipoPagto[i].tpg_parc2, ObjTipoPagto[i].tpg_parc3, ObjTipoPagto[i].tpg_parc4, ObjTipoPagto[i].tpg_parc5, 
+                ObjTipoPagto[i].tpg_parc6, ObjTipoPagto[i].tpg_parc7, ObjTipoPagto[i].tpg_parc8, ObjTipoPagto[i].tpg_parc9, ObjTipoPagto[i].tpg_parc10, 
+                ObjTipoPagto[i].tpg_parc11, ObjTipoPagto[i].tpg_parc12, ObjTipoPagto[i].tpg_clp, ObjTipoPagto[i].tpg_ctrl_pagto_cheque, 
+                ObjTipoPagto[i].tpe_id, ObjTipoPagto[i].tpe_ind_pag, ObjTipoPagto[i].tpe_pagamento, ObjTipoPagto[i].clf_id, ObjTipoPagto[i].tip_id, 
+                ObjTipoPagto[i].tpg_tipo_nfe, ObjTipoPagto[i].tpg_catalogo, ObjTipoPagto[i].tpg_tef, ObjTipoPagto[i].tpg_integrador_farmacia
+            ]);
+        };
 
-    ObjTipoPagto.forEach(element => {
-
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateTipoPagtos, [                    
-                    element.tpg_id, element.tpg_descricao, element.tpg_pagamento, element.tpg_preco, element.tpg_desconto,
-                    element.tpg_tipo, element.tpg_tipo_frete, element.tpg_liberado_cli_novo, element.tpg_custo_bancario,
-                    element.tpg_parc1, element.tpg_parc2, element.tpg_parc3, element.tpg_parc4, element.tpg_parc5, 
-                    element.tpg_parc6, element.tpg_parc7, element.tpg_parc8, element.tpg_parc9, element.tpg_parc10, 
-                    element.tpg_parc11, element.tpg_parc12, element.tpg_clp, element.tpg_ctrl_pagto_cheque, 
-                    element.tpe_id, element.tpe_ind_pag, element.tpe_pagamento, element.clf_id, element.tip_id, 
-                    element.tpg_tipo_nfe, element.tpg_catalogo, element.tpg_tef, element.tpg_integrador_farmacia
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Tipo de Pagamento atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;    
+        console.log('Tipo de Pagamento atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }   
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

@@ -87,44 +87,35 @@ exports.delete = function(filId, arrayProReferencia){
     });
 };
 
-exports.update = function update(ObjEstoqueFiliais){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjEstoqueFiliais){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjEstoqueFiliais.length; ++i){                            
+                
+            docAtualizados.push(ObjEstoqueFiliais[i].fil_id, ObjEstoqueFiliais[i].pro_referencia);
 
-    ObjEstoqueFiliais.forEach(element => {
+            const res = await client.query(updateEstoqueFiliais, [
+                    ObjEstoqueFiliais[i].fil_id, ObjEstoqueFiliais[i].pro_referencia, ObjEstoqueFiliais[i].estfil_estoque
+                ]);
+            };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateEstoqueFiliais, [
-                    element.fil_id, element.pro_referencia, element.estfil_estoque
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Estoque Filial atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+            console.log('Estoque Filial atualizado com sucesso! Filial_ID e REF', docAtualizados);
+            await client.query('COMMIT');
+            return true;
+        } catch (e) {
+            await client.query('ROLLBACK')
+            throw e
+        } finally {
+            // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+            // apenas no caso de o próprio tratamento de erros gerar um erro.
+            client.release()
+        }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

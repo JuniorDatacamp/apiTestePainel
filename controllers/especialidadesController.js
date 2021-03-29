@@ -102,21 +102,32 @@ exports.alterar = function(req, res){
     var promisesEspecialidade;
     promisesEspecialidade = especialidadesModel.update(arrayEspecialidade);
 
-    Promise.all(  
-        promisesEspecialidade
-    )
-    .then(
-        (resultados) => {
+    promisesEspecialidade
+    .then(resultados => {
+        res.status(200).json({
+            mensagem: 'Especialidades(s) atualizado com sucesso!'
+        });            
+    })
+    .catch(erro => {
+        console.error(erro.stack)
+        funcUtils.getMensagemErros(erro, res);
+    });
 
-            console.log('Especialidades(s) atualizado com sucesso!');
+    // Promise.all(  
+    //     promisesEspecialidade
+    // )
+    // .then(
+    //     (resultados) => {
 
-            res.status(200).json({
-                mensagem: 'Especialidades(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
-            funcUtils.getMensagemErros(erro, res);
-        }
-    );    
+    //         console.log('Especialidades(s) atualizado com sucesso!');
+
+    //         res.status(200).json({
+    //             mensagem: 'Especialidades(s) atualizado com sucesso!'
+    //         });
+    //     },
+    //     (erro) => {
+    //         console.log(erro);
+    //         funcUtils.getMensagemErros(erro, res);
+    //     }
+    // );    
 };

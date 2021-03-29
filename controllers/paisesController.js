@@ -101,21 +101,14 @@ exports.alterar = function(req, res){
     var promisesPaises;
     promisesPaises = paisesModel.update(arrayPaises);
 
-    Promise.all(  
-        promisesPaises
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Países atualizado com sucesso!');
-
+    promisesPaises
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Países atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

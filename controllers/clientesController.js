@@ -309,23 +309,16 @@ exports.alterarCompleto = function(req, res){
     var promisesCliente;
     promisesCliente = clientes.updateCompleto(arrayCliente);
 
-    Promise.all(  
-        promisesCliente
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Cliente(s) atualizado com sucesso!');
-           
+    promisesCliente
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Cliente(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };
 
 exports.inserirCompleto = function(req, res){

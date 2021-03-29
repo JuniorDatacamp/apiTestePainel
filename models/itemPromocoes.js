@@ -94,44 +94,37 @@ exports.delete = function(idItemPromocao){
     });
 };
 
-exports.update = function update(ObjItemPromocao){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjItemPromocao){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjItemPromocao.length; ++i){                            
+                
+            docAtualizados.push(ObjItemPromocao[i].ipr_id);
 
-    ObjItemPromocao.forEach(element => {
+            const res = await client.query(updateItemPromocao, [
+                ObjItemPromocao[i].ipr_id, ObjItemPromocao[i].prm_id, ObjItemPromocao[i].pro_id, 
+                ObjItemPromocao[i].ipr_vlr_promocao, ObjItemPromocao[i].pgr_id                    
+            ]);
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
+        };
 
-                ConexaoBanco.query(updateItemPromocao, [
-                    element.ipr_id, element.prm_id, element.pro_id, element.ipr_vlr_promocao, element.pgr_id                    
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Item de promoção atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Item de promoção atualizado com sucesso! ID_itemPromocao:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

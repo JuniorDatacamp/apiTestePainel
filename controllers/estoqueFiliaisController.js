@@ -104,21 +104,14 @@ exports.alterar = function(req, res){
     var promisesestoqueFiliais;
     promisesestoqueFiliais = estoqueFiliaisModel.update(arrayEstoqueFiliais);
 
-    Promise.all(  
-        promisesestoqueFiliais
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Estoque da Filial atualizado com sucesso!');
-
+    promisesestoqueFiliais
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Estoque da Filial atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

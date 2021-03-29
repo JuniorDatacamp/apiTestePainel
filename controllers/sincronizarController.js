@@ -14,6 +14,7 @@ const empresas = require('../models/empresa');
 const vendas = require('../models/vendas');
 const ocorrencias = require('../models/ocorrencias');
 const ultMovRetaguarda = require('../models/ultMovRetaguarda');
+const funcUtils = require('../utils/funcUtils');
 const { string } = require('pg-format');
 
 exports.sincronizandoApp = function(req, res, isFull){

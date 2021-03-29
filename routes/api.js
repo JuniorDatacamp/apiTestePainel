@@ -42,14 +42,14 @@ router.route('/sync/:ultimasincronizacao')
 		.get(token.validarTokenApp, function(req, res){			
 				sincronizar.sincronizandoApp(req, res, false)
 			}
-		);
+		);	
 
 //App sincronizar todos dados
 router.route('/syncfull')
 		.get(token.validarTokenApp, function(req, res){			
 				sincronizar.sincronizandoApp(req, res, true)
 			}
-		);
+		);	
 
 //sincronizar dados para retaguarda
 router.route('/syncretaguarda')
@@ -74,7 +74,7 @@ router.route('/clientes/app')
 //Desenvolver rota para acesso total da tabela clientes.
 router.route('/clientes')
 		.post(token.validarTokenRetaguarda, clientes.inserirCompleto)
-		.get(token.validarTokenRetaguarda, clientes.pesquisarTodos)
+		.get(token.validarTokenRetaguarda, clientes.pesquisarTodos)		
 		.put(token.validarTokenRetaguarda, clientes.alterarCompleto)
 		.delete(token.validarTokenRetaguarda, clientes.delete)
 
@@ -131,7 +131,7 @@ router.route('/itempromocoes/:pesquisa')
 router.route('/marcas')
 		.post(token.validarTokenRetaguarda, marcas.inserir)
 		.get(token.validarTokenRetaguarda, marcas.pesquisarTodos)
-		.put(token.validarTokenRetaguarda, marcas.alterar)
+		.put(token.validarTokenRetaguarda, marcas.alterar)	
 		.delete(token.validarTokenRetaguarda, marcas.deletar);		
 
 //Fim Marcas
@@ -265,7 +265,7 @@ router.route('/tipospagtoscliente/:pesquisa')
 router.route('/tipospedido')
 		.post(token.validarTokenRetaguarda, tiposPedidos.inserir)
 		.get(token.validarTokenRetaguarda, tiposPedidos.pesquisarTodos)
-		.put(token.validarTokenRetaguarda, tiposPedidos.alterar)
+		.put(token.validarTokenRetaguarda, tiposPedidos.alterar)	
 		.delete(token.validarTokenRetaguarda, tiposPedidos.deletar)
 
 router.route('/tipospagtoscliente/:pesquisa')

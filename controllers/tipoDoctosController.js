@@ -102,21 +102,14 @@ exports.alterar = function(req, res){
     var promisesTipoDoctos;
     promisesTipoDoctos = tipoDoctosModel.update(arrayTipoDoctos);
 
-    Promise.all(  
-        promisesTipoDoctos
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Tipos Documentos atualizado com sucesso!');
-
+    promisesTipoDoctos
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Tipos Documentos atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );    
+        });
 };

@@ -101,21 +101,14 @@ exports.alterar = function(req, res){
     var promisesMarca;
     promisesMarca = marcasModel.update(arrayMarca);
 
-    Promise.all(  
-        promisesMarca
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Marca(s) atualizado com sucesso!');
-
+    promisesMarca
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Marca(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

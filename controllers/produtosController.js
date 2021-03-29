@@ -330,21 +330,14 @@ exports.alterar = function(req, res){
     var promisesProduto;
     promisesProduto = produtosModel.update(arrayProduto);
 
-    Promise.all(  
-        promisesProduto
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Produto(s) atualizado com sucesso!');
-
-            res.status(200).json({
-                mensagem: 'Produto(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
-            funcUtils.getMensagemErros(erro, res);
-        }
-    );   
+    promisesProduto
+    .then(resultados => {
+        res.status(200).json({
+            mensagem: 'Produto(s) atualizado com sucesso!'
+        });            
+    })
+    .catch(erro => {
+        console.error(erro.stack)
+        funcUtils.getMensagemErros(erro, res);
+    });
 };

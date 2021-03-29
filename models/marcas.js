@@ -87,44 +87,35 @@ exports.delete = function(idMarcas){
     });
 };
 
-exports.update = function update(ObjMarcas){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjMarcas){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjMarcas.length; ++i){                            
+                
+            docAtualizados.push(ObjMarcas[i].mrc_id);
 
-    ObjMarcas.forEach(element => {
+            const res = await client.query(updateMarcas, [
+                ObjMarcas[i].mrc_id, ObjMarcas[i].mrc_descricao
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateMarcas, [
-                    element.mrc_id, element.mrc_descricao
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Marca(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Marca(s) atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

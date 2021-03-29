@@ -91,45 +91,35 @@ exports.delete = function(idRestricao){
     });
 };
 
-exports.update = function update(ObjRestricoes){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjRestricoes){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjRestricoes.length; ++i){                            
+                
+            docAtualizados.push(ObjRestricoes[i].res_id);
 
-    ObjRestricoes.forEach(restricao => {
+            const res = await client.query(updateRestricoes, [
+                ObjRestricoes[i].res_id, ObjRestricoes[i].res_descricao, ObjRestricoes[i].res_figura, ObjRestricoes[i].res_situacao, 
+                ObjRestricoes[i].res_senha, ObjRestricoes[i].res_bloq_debitos
+            ]);
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
+        };
 
-                ConexaoBanco.query(updateRestricoes, [
-                    restricao.res_id, restricao.res_descricao, restricao.res_figura, restricao.res_situacao, 
-                    restricao.res_senha, restricao.res_bloq_debitos
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Restrições atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Restrições atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };

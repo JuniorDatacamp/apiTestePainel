@@ -191,52 +191,43 @@ exports.delete = function(idVendedor){
     });    
 };
 
-exports.update = function(objVendedor){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function(objVendedor){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objVendedor.length; ++i){                            
+                
+            docAtualizados.push(objVendedor[i].vdd_id);
 
-    objVendedor.forEach(vendedor => {
+            const res = await client.query(updateVendedor, [
+                objVendedor[i].vdd_id, objVendedor[i].vdd_nome, objVendedor[i].vdd_comissao, objVendedor[i].vdd_senha, objVendedor[i].vdd_rua, 
+                objVendedor[i].vdd_bairro, objVendedor[i].vdd_cidade, objVendedor[i].vdd_telefone, objVendedor[i].vdd_ativo, 
+                objVendedor[i].vdd_palm, objVendedor[i].vdd_ultimo_cli_id_palm, objVendedor[i].vdd_ultimo_ped_id, objVendedor[i].vdd_usuario_datasus, 
+                objVendedor[i].vdd_senha_datasus, objVendedor[i].vdd_senha_palm, objVendedor[i].vdd_perc_desc_max, objVendedor[i].vdd_cpf, 
+                objVendedor[i].vdd_rg, objVendedor[i].vdd_dt_nasc, objVendedor[i].vdd_banco_numero, objVendedor[i].vdd_banco_agencia, 
+                objVendedor[i].vdd_banco_operacao, objVendedor[i].vdd_banco_conta, objVendedor[i].vdd_banco_nome, objVendedor[i].vdd_banco_tipo_conta, 
+                objVendedor[i].vdd_observacoes, objVendedor[i].vdd_numero, objVendedor[i].vdd_complemento, objVendedor[i].vdd_cep, objVendedor[i].vdd_estado, 
+                objVendedor[i].vdd_telefone2, objVendedor[i].vdd_telefone3, objVendedor[i].vdd_fax, objVendedor[i].reg_id, objVendedor[i].vdd_email, 
+                objVendedor[i].vdd_max_pedidos, objVendedor[i].vdd_entra_rel_carga, objVendedor[i].vdd_comissao_tx1
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateVendedor, [
-                    vendedor.vdd_id, vendedor.vdd_nome, vendedor.vdd_comissao, vendedor.vdd_senha, vendedor.vdd_rua, 
-                    vendedor.vdd_bairro, vendedor.vdd_cidade, vendedor.vdd_telefone, vendedor.vdd_ativo, 
-                    vendedor.vdd_palm, vendedor.vdd_ultimo_cli_id_palm, vendedor.vdd_ultimo_ped_id, vendedor.vdd_usuario_datasus, 
-                    vendedor.vdd_senha_datasus, vendedor.vdd_senha_palm, vendedor.vdd_perc_desc_max, vendedor.vdd_cpf, 
-                    vendedor.vdd_rg, vendedor.vdd_dt_nasc, vendedor.vdd_banco_numero, vendedor.vdd_banco_agencia, 
-                    vendedor.vdd_banco_operacao, vendedor.vdd_banco_conta, vendedor.vdd_banco_nome, vendedor.vdd_banco_tipo_conta, 
-                    vendedor.vdd_observacoes, vendedor.vdd_numero, vendedor.vdd_complemento, vendedor.vdd_cep, vendedor.vdd_estado, 
-                    vendedor.vdd_telefone2, vendedor.vdd_telefone3, vendedor.vdd_fax, vendedor.reg_id, vendedor.vdd_email, 
-                    vendedor.vdd_max_pedidos, vendedor.vdd_entra_rel_carga, vendedor.vdd_comissao_tx1
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Vendedor atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;    
+        console.log('Vendedor atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }   
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

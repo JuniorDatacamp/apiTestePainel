@@ -105,21 +105,14 @@ exports.alterar = function(req, res){
     var promisesTipoPedido;
     promisesTipoPedido = tiposPedidoModel.update(arrayTiposPedido);
 
-    Promise.all(  
-        promisesTipoPedido
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Tipo(s) de pedido atualizado com sucesso!');
-
+    promisesTipoPedido
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Tipo(s) de pedido atualizado com sucesso!'
             });
-        },
-        (erro) => {
-            console.log(erro);
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

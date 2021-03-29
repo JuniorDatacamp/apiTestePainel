@@ -14,7 +14,7 @@ const sqlClienteApp =
         cli_enderecocobranca, cli_bairrocobranca, mun_cod as cidade_cobranca,
         cli_cepcobranca, cli_numero as numero_cobranca,
         cli_cidadecobranca, cli_estadocobranca, cli_observacao,
-        c.res_id, r.res_descricao, r.res_situacao, res_bloq_debitos,
+        c.res_id, r.res_descricao, r.res_situacao, res_bloq_debitos, res_senha,
         c.esp_id, esp_descricao, esp_finan,
         cli_datacadastro, maxcompras,
         case
@@ -203,8 +203,8 @@ function formatSqlSyncronizacaoApp (package){
         
         selectClientes          = format(sqlClienteApp, addColunaCliente) + `
             and cli_uuid in (
-                select cli_uuid from vw_atualizacao_clientes where dt_ultima_atualizacao > $2 group by cli_uuid
-            )  or (cli_dt_ultima_atualizacao > $2 )
+                select cli_uuid from vw_atualizacao_clientes where dt_ultima_atualizacao > $2 and cast(vdd_id as varchar(10)) ilike $1 group by cli_uuid
+            )
         `;
 
         params.push(package.data);
@@ -342,7 +342,7 @@ exports.retornarClientesApp = function retornarClientesApp(package){
                     reject(erro);
                 }
             );
-        })            
+        })
     });
 };
 
@@ -392,84 +392,77 @@ exports.getClientesFormat = function(parametro){
     });
 };
 
-exports.updateCompleto = function(objCliente){
+exports.updateCompleto = async function(objCliente){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (error, results) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objCliente.length; ++i){
+            
+            docAtualizados.push(objCliente[i].cli_uuid);
 
-    var arrayPromise = [];
+            const res = await client.query(updateClientesCompleto, [
+                    objCliente[i].cli_uuid, objCliente[i].vdd_id, objCliente[i].res_id, objCliente[i].esp_id, objCliente[i].cli_cgc, objCliente[i].cli_cpf, objCliente[i].cli_inscricao, 
+                    objCliente[i].cli_datacadastro, objCliente[i].cli_nome, objCliente[i].cli_endereco, objCliente[i].cli_bairro, objCliente[i].cli_cep, 
+                    objCliente[i].cli_cidade, objCliente[i].cli_estado, objCliente[i].cli_enderecocobranca, objCliente[i].cli_bairrocobranca, 
+                    objCliente[i].cli_cepcobranca, objCliente[i].cli_cidadecobranca, objCliente[i].cli_estadocobranca, objCliente[i].cli_contato, 
+                    objCliente[i].cli_telefone, objCliente[i].cli_celularfax, objCliente[i].cli_condicaopagamento, objCliente[i].cli_localpagamento, 
+                    objCliente[i].cli_observacao, objCliente[i].cli_email, objCliente[i].cli_homepage, objCliente[i].cli_emitiretiqueta, 
+                    objCliente[i].maxcompras, objCliente[i].cli_foto, objCliente[i].cli_nomefantasia, objCliente[i].cli_datanascimento, objCliente[i].cli_pai, 
+                    objCliente[i].cli_mae, objCliente[i].cli_telefone1, objCliente[i].cli_telefone2, objCliente[i].cli_referencia1, objCliente[i].cli_referencia2, 
+                    objCliente[i].cli_referencia3, objCliente[i].cli_reftel1, objCliente[i].cli_reftel2, objCliente[i].cli_reftel3, objCliente[i].cli_tipopes, 
+                    objCliente[i].cli_ativo, objCliente[i].cli_datacompra, objCliente[i].cli_datapagto, objCliente[i].cli_descmax, 
+                    objCliente[i].cli_local_trabalho, objCliente[i].cli_conjuge, objCliente[i].cli_documento, objCliente[i].oex_codigo, objCliente[i].tdc_codigo, 
+                    objCliente[i].cli_ufdocto, objCliente[i].cli_contrato_medical, objCliente[i].cli_vlr_consulta_medical, objCliente[i].cli_numfunc_medical, 
+                    objCliente[i].cli_cnae, objCliente[i].cli_telcontato, objCliente[i].cli_msn, objCliente[i].cli_proprietario, objCliente[i].mun_cod, 
+                    objCliente[i].cli_numero, objCliente[i].cli_complemento, objCliente[i].cli_diascontato, objCliente[i].cli_credito, objCliente[i].cli_id_palm, 
+                    objCliente[i].cli_inscricao_mun, objCliente[i].pai_cod, objCliente[i].cli_suframa, objCliente[i].cli_dias_padrao_venda, objCliente[i].cli_rg, 
+                    objCliente[i].cli_sexo, objCliente[i].tpg_id, objCliente[i].tip_id, objCliente[i].cli_afe_codigo, objCliente[i].cli_afe_dtvalidade, 
+                    objCliente[i].cli_ae_codigo, objCliente[i].cli_ae_dtvalidade, objCliente[i].cli_sus_codigo, objCliente[i].cli_sus_dtvalidade, 
+                    objCliente[i].dt_atualizacao, objCliente[i].cli_tipo_estab, objCliente[i].cli_fazenda_nome, objCliente[i].cli_fazenda_ie, 
+                    objCliente[i].cli_fazenda_local, objCliente[i].cli_fazenda_mun_cod, objCliente[i].cli_banco_tipo_conta, objCliente[i].cli_banco_nome, 
+                    objCliente[i].cli_banco_numero, objCliente[i].cli_banco_agencia, objCliente[i].cli_banco_conta, objCliente[i].cli_profissao, 
+                    objCliente[i].cli_renda, objCliente[i].cli_subst_trib_iss, objCliente[i].cli_rntrc, objCliente[i].cli_banco_operacao, 
+                    objCliente[i].cli_integracao_vendas, objCliente[i].cli_dt_serasa, objCliente[i].cli_dt_primeira_compra, objCliente[i].cli_vlr_primeira_compra, 
+                    objCliente[i].cli_vlr_ult_compra, objCliente[i].cli_data_alt_situacao, objCliente[i].cli_dt_spc, objCliente[i].set_id, 
+                    objCliente[i].cli_banco_cidade, objCliente[i].cli_banco_conjunta, objCliente[i].cli_banco_titular_sec, objCliente[i].cli_tipo_consumidor, 
+                    objCliente[i].cli_end_com_telefone, objCliente[i].cli_cnh, objCliente[i].cli_dt_emissao_rg, objCliente[i].cli_naturalidade, 
+                    objCliente[i].cli_nat_uf, objCliente[i].cli_nacionalidade, objCliente[i].cli_estado_civil, objCliente[i].cli_num_dependentes, 
+                    objCliente[i].cli_grau_instrucao, objCliente[i].cli_categoria, objCliente[i].cli_tempo_residencia, objCliente[i].cli_tipo_resid, 
+                    objCliente[i].cli_valor_prest_aluguel, objCliente[i].cli_end_anterior, objCliente[i].cli_end_ant_num, objCliente[i].cli_end_ant_bairro, 
+                    objCliente[i].cli_end_ant_compl, objCliente[i].cli_end_ant_cidade, objCliente[i].cli_end_ant_cod_mun, objCliente[i].cli_end_ant_cep, 
+                    objCliente[i].cli_end_ant_uf, objCliente[i].cli_end_comercial, objCliente[i].cli_end_com_num, objCliente[i].cli_end_com_bairro, 
+                    objCliente[i].cli_end_com_compl, objCliente[i].cli_end_com_cidade, objCliente[i].cli_end_com_cod_mun, objCliente[i].cli_end_com_cep, 
+                    objCliente[i].cli_end_com_uf, objCliente[i].cli_end_com_email, objCliente[i].cli_end_com_site, objCliente[i].cli_com_cnpj, 
+                    objCliente[i].cli_com_atividade, objCliente[i].cli_com_site_prof, objCliente[i].cli_com_cargo, objCliente[i].cli_com_dt_admissao, 
+                    objCliente[i].cli_com_outras_rendas, objCliente[i].cli_com_fone_contador, objCliente[i].cli_com_phone_rh, objCliente[i].cli_conjuge_nome, 
+                    objCliente[i].cli_conjuge_sexo, objCliente[i].cli_conjuge_cpf, objCliente[i].cli_conjuge_rg, objCliente[i].cli_conjuge_dt_nasc, 
+                    objCliente[i].cli_conjuge_naturalidade, objCliente[i].cli_conjuge_nacionalidade, objCliente[i].cli_conjuge_uf, objCliente[i].cli_conjuge_emp, 
+                    objCliente[i].cli_conjuge_fone, objCliente[i].cli_conjuge_profissao, objCliente[i].cli_conjuge_tempo_serv, objCliente[i].cli_conjuge_cargo, 
+                    objCliente[i].cli_conjuge_salario, objCliente[i].cli_conjuge_email, objCliente[i].mun_cod_rota, objCliente[i].cli_estrangeiro,
+                    objCliente[i].cli_doc_estrangeiro, objCliente[i].cli_id
+                ]);
 
-    objCliente.forEach(oCliente => {
+            };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateClientesCompleto, [
-                    oCliente.cli_uuid, oCliente.vdd_id, oCliente.res_id, oCliente.esp_id, oCliente.cli_cgc, oCliente.cli_cpf, oCliente.cli_inscricao, 
-                    oCliente.cli_datacadastro, oCliente.cli_nome, oCliente.cli_endereco, oCliente.cli_bairro, oCliente.cli_cep, 
-                    oCliente.cli_cidade, oCliente.cli_estado, oCliente.cli_enderecocobranca, oCliente.cli_bairrocobranca, 
-                    oCliente.cli_cepcobranca, oCliente.cli_cidadecobranca, oCliente.cli_estadocobranca, oCliente.cli_contato, 
-                    oCliente.cli_telefone, oCliente.cli_celularfax, oCliente.cli_condicaopagamento, oCliente.cli_localpagamento, 
-                    oCliente.cli_observacao, oCliente.cli_email, oCliente.cli_homepage, oCliente.cli_emitiretiqueta, 
-                    oCliente.maxcompras, oCliente.cli_foto, oCliente.cli_nomefantasia, oCliente.cli_datanascimento, oCliente.cli_pai, 
-                    oCliente.cli_mae, oCliente.cli_telefone1, oCliente.cli_telefone2, oCliente.cli_referencia1, oCliente.cli_referencia2, 
-                    oCliente.cli_referencia3, oCliente.cli_reftel1, oCliente.cli_reftel2, oCliente.cli_reftel3, oCliente.cli_tipopes, 
-                    oCliente.cli_ativo, oCliente.cli_datacompra, oCliente.cli_datapagto, oCliente.cli_descmax, 
-                    oCliente.cli_local_trabalho, oCliente.cli_conjuge, oCliente.cli_documento, oCliente.oex_codigo, oCliente.tdc_codigo, 
-                    oCliente.cli_ufdocto, oCliente.cli_contrato_medical, oCliente.cli_vlr_consulta_medical, oCliente.cli_numfunc_medical, 
-                    oCliente.cli_cnae, oCliente.cli_telcontato, oCliente.cli_msn, oCliente.cli_proprietario, oCliente.mun_cod, 
-                    oCliente.cli_numero, oCliente.cli_complemento, oCliente.cli_diascontato, oCliente.cli_credito, oCliente.cli_id_palm, 
-                    oCliente.cli_inscricao_mun, oCliente.pai_cod, oCliente.cli_suframa, oCliente.cli_dias_padrao_venda, oCliente.cli_rg, 
-                    oCliente.cli_sexo, oCliente.tpg_id, oCliente.tip_id, oCliente.cli_afe_codigo, oCliente.cli_afe_dtvalidade, 
-                    oCliente.cli_ae_codigo, oCliente.cli_ae_dtvalidade, oCliente.cli_sus_codigo, oCliente.cli_sus_dtvalidade, 
-                    oCliente.dt_atualizacao, oCliente.cli_tipo_estab, oCliente.cli_fazenda_nome, oCliente.cli_fazenda_ie, 
-                    oCliente.cli_fazenda_local, oCliente.cli_fazenda_mun_cod, oCliente.cli_banco_tipo_conta, oCliente.cli_banco_nome, 
-                    oCliente.cli_banco_numero, oCliente.cli_banco_agencia, oCliente.cli_banco_conta, oCliente.cli_profissao, 
-                    oCliente.cli_renda, oCliente.cli_subst_trib_iss, oCliente.cli_rntrc, oCliente.cli_banco_operacao, 
-                    oCliente.cli_integracao_vendas, oCliente.cli_dt_serasa, oCliente.cli_dt_primeira_compra, oCliente.cli_vlr_primeira_compra, 
-                    oCliente.cli_vlr_ult_compra, oCliente.cli_data_alt_situacao, oCliente.cli_dt_spc, oCliente.set_id, 
-                    oCliente.cli_banco_cidade, oCliente.cli_banco_conjunta, oCliente.cli_banco_titular_sec, oCliente.cli_tipo_consumidor, 
-                    oCliente.cli_end_com_telefone, oCliente.cli_cnh, oCliente.cli_dt_emissao_rg, oCliente.cli_naturalidade, 
-                    oCliente.cli_nat_uf, oCliente.cli_nacionalidade, oCliente.cli_estado_civil, oCliente.cli_num_dependentes, 
-                    oCliente.cli_grau_instrucao, oCliente.cli_categoria, oCliente.cli_tempo_residencia, oCliente.cli_tipo_resid, 
-                    oCliente.cli_valor_prest_aluguel, oCliente.cli_end_anterior, oCliente.cli_end_ant_num, oCliente.cli_end_ant_bairro, 
-                    oCliente.cli_end_ant_compl, oCliente.cli_end_ant_cidade, oCliente.cli_end_ant_cod_mun, oCliente.cli_end_ant_cep, 
-                    oCliente.cli_end_ant_uf, oCliente.cli_end_comercial, oCliente.cli_end_com_num, oCliente.cli_end_com_bairro, 
-                    oCliente.cli_end_com_compl, oCliente.cli_end_com_cidade, oCliente.cli_end_com_cod_mun, oCliente.cli_end_com_cep, 
-                    oCliente.cli_end_com_uf, oCliente.cli_end_com_email, oCliente.cli_end_com_site, oCliente.cli_com_cnpj, 
-                    oCliente.cli_com_atividade, oCliente.cli_com_site_prof, oCliente.cli_com_cargo, oCliente.cli_com_dt_admissao, 
-                    oCliente.cli_com_outras_rendas, oCliente.cli_com_fone_contador, oCliente.cli_com_phone_rh, oCliente.cli_conjuge_nome, 
-                    oCliente.cli_conjuge_sexo, oCliente.cli_conjuge_cpf, oCliente.cli_conjuge_rg, oCliente.cli_conjuge_dt_nasc, 
-                    oCliente.cli_conjuge_naturalidade, oCliente.cli_conjuge_nacionalidade, oCliente.cli_conjuge_uf, oCliente.cli_conjuge_emp, 
-                    oCliente.cli_conjuge_fone, oCliente.cli_conjuge_profissao, oCliente.cli_conjuge_tempo_serv, oCliente.cli_conjuge_cargo, 
-                    oCliente.cli_conjuge_salario, oCliente.cli_conjuge_email, oCliente.mun_cod_rota, oCliente.cli_estrangeiro,
-                    oCliente.cli_doc_estrangeiro, oCliente.cli_id
-                ], (error, results) => {
-                    
-                    if(error){
-                        return reject(error);
-                    }else
-                        return resolve({
-                            mensagem: 'Cliente(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+            console.log('Cliente(s) atualizado com sucesso! UUID:', docAtualizados);
+            await client.query('COMMIT');
+            return true;
+        } catch (e) {
+            await client.query('ROLLBACK')
+            throw e
+        } finally {
+            // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+            // apenas no caso de o próprio tratamento de erros gerar um erro.
+            client.release()
+        }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));
 
 exports.insertCompleto = function (objCliente){
 

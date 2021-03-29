@@ -92,47 +92,65 @@ exports.delete = function(idMunicipios){
     });   
 };
 
-exports.update = function(objMunicipios){
+exports.update = async function(objMunicipios){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objMunicipios.length; ++i){                            
+                
+            docAtualizados.push(objMunicipios[i].mun_cod);    
 
-    var arrayPromise = [];
+    // const ConexaoBanco = Configuracao.conexao;
 
-    objMunicipios.forEach(element => {
+    // ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
+    // });
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
+    // var arrayPromise = [];
 
-                ConexaoBanco.query(updateMunicipios, [                    
-                    element.mun_cod, element.mun_nome, element.mun_cod_uf, element.mun_uf
-                ], (error, results) => {
+    // objMunicipios.forEach(element => {
 
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Municipio(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
+    //     arrayPromise.push(
+    //         new Promise((resolve, reject) => {
 
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
+            const res = await client.query(updateMunicipios, [                    
+                objMunicipios[i].mun_cod, objMunicipios[i].mun_nome, objMunicipios[i].mun_cod_uf, 
+                objMunicipios[i].mun_uf
+            ]);
+        };
 
-    return arrayPromise;     
+        console.log('Municipio(s) atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
+
+
+    //     );
+    // });
+
+    // Promise.all(arrayPromise).then(
+    //     ConexaoBanco.query('commit', (error, results) => {
+    //     })
+    // ).catch(
+    //     ConexaoBanco.query('rollback', (error, results) => {
+    //     })
+    // );
+
+    // return arrayPromise;     
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));
 
 exports.insert = function (objMunicipios){
 

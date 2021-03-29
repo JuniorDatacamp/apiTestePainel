@@ -122,45 +122,36 @@ exports.delete = function(idTiposPedido){
     });
 };
 
-exports.update = function update(ObjTiposPedido){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjTiposPedido){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjTiposPedido.length; ++i){                            
+                
+            docAtualizados.push(ObjTiposPedido[i].tpp_id);
 
-    ObjTiposPedido.forEach(element => {
+            const res = await client.query(updateTiposPedido, [
+                ObjTiposPedido[i].tpp_id, ObjTiposPedido[i].tpp_nome, ObjTiposPedido[i].tpp_gera_financ, 
+                ObjTiposPedido[i].tpp_baixa_estoq, ObjTiposPedido[i].tpp_tipo, ObjTiposPedido[i].tpp_vlr_total_zerado
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateTiposPedido, [
-                    element.tpp_id, element.tpp_nome, element.tpp_gera_financ, element.tpp_baixa_estoq, 
-                    element.tpp_tipo, element.tpp_vlr_total_zerado
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Tipo(s) de pedido atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Tipo(s) de pedido atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

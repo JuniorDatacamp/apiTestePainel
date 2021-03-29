@@ -124,44 +124,33 @@ exports.delete = function(idRegioes){
     });    
 };
 
-exports.update = function update(ObjRegioes){
+exports.update = async function update(ObjRegioes){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjRegioes.length; ++i){                            
+                
+            docAtualizados.push(ObjRegioes[i].reg_id);
 
-    var arrayPromise = [];
+            const res = await client.query(updateRegioes, [                    
+                ObjRegioes[i].reg_id, ObjRegioes[i].reg_nome, ObjRegioes[i].reg_percentual
+            ]);
+        };
 
-    ObjRegioes.forEach(element => {
-
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateRegioes, [                    
-                    element.reg_id, element.reg_nome, element.reg_percentual
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Regiões atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;    
+        console.log('Regiões atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    } 
 };

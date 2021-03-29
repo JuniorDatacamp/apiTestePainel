@@ -92,44 +92,35 @@ exports.delete = function(idEspecialidades){
     });
 };
 
-exports.update = function update(ObjEspecialidades){
+exports.update = async function update(ObjEspecialidades){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjEspecialidades.length; ++i){
+                
+            docAtualizados.push(ObjEspecialidades[i].esp_id);
 
-    var arrayPromise = [];
+            const res = await client.query(updateEspecialidades, [
+                ObjEspecialidades[i].esp_id, ObjEspecialidades[i].esp_descricao, ObjEspecialidades[i].esp_finan
+            ]);
+        };
 
-    ObjEspecialidades.forEach(element => {
-
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateEspecialidades, [
-                    element.esp_id, element.esp_descricao, element.esp_finan
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Especialidades(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Especialidade(s) atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

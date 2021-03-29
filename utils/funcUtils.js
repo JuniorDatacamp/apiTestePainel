@@ -1,3 +1,7 @@
+const requestServer = require('request');
+const modelEmpresa = require('../models/empresa');
+const modelConfiguracao = require('../models/configuracoes');
+
 /* ( models/produtos - retornarProdutos é um exemplo de como utilizar )
     
     Adicione o funcUtils.js no seu arquivo.
@@ -18,7 +22,63 @@ exports.formatarComZero = function(num, size){
     return s.substr(s.length-size);
 }
 
-exports.getMensagemErros = function getMensagemErros(error, res){
+async function enviarAlerta(error){
+    
+    //Buscando última horas de alerta
+    const difHorasAlerta = await modelConfiguracao.getDifAlerta();
+
+    return new Promise((resolve, reject) => {
+
+        if (difHorasAlerta > 0){
+            
+            const hostname = process.env.HOST_PAINEL;
+            const path = '/painel/usuarios/alerta';
+
+            modelEmpresa.getEmpresas()
+            .then(
+                sucess => {
+
+                    requestServer.post(`${hostname}${path}`, {
+                        json: {            
+                            "error": String(error),
+                            "empresa": sucess[0].emp_nome            
+                        }
+                    },
+                        (err, respServer, body) => {
+            
+                        if (err){      
+                            reject(err);
+                        }
+            
+                        if (respServer.statusCode === 200){            
+                            console.log('E-mail de alerta enviado com sucesso!');
+                            
+                            //Atualizando última horas de alerta
+                            modelConfiguracao.updateDifAlerta().then(
+                                sucess => resolve(body)
+                            ).catch(erro => {                             
+                                console.log('Erro ao atualizar última hora de alerta!');
+                                resolve(body)
+                            });
+                            
+                            // resolve(body);
+                        }else{                        
+                            console.log(body);
+                            reject(body);
+                        }
+                    });
+                },
+                error => {
+                    reject(error);
+                }
+            )
+        }else{            
+            resolve(true);
+        }
+    });    
+}
+
+function tratarErros(error, res){
 
     switch (parseInt(error.code)) {
         
@@ -69,6 +129,20 @@ exports.getMensagemErros = function getMensagemErros(error, res){
                 erro: error});
             break;            
     }
+}
+
+exports.getMensagemErros = function getMensagemErros(error, res){
+
+    enviarAlerta(error)
+    .then(
+        sucess => {
+            tratarErros(error, res);
+        },
+        error => {
+            console.log('Erro desconhecido ao enviar alerta!', error);
+            res.status(500).json("Erro desconhecido ao enviar alerta! "+ error)
+        }
+    )
 }
 
 exports.getFormatParams = function getMensagemErros(req){

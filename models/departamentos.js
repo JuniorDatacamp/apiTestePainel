@@ -93,48 +93,39 @@ exports.delete = function(idDepartamentos){
     });
 };
 
-exports.update = function(objDepartamento){
-   
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function(objDepartamento){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objDepartamento.length; ++i){                            
+                
+            docAtualizados.push(objDepartamento[i].dep_id);
 
-    objDepartamento.forEach(element => {
+            const res = await client.query(updateDepartamento, [
+                objDepartamento[i].dep_id, objDepartamento[i].dep_descricao, objDepartamento[i].dep_desconto, 
+                objDepartamento[i].dep_coeficiente, objDepartamento[i].dep_situacao, objDepartamento[i].dep_acesso_api
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateDepartamento, [
-                    element.dep_id, element.dep_descricao, element.dep_desconto, 
-                    element.dep_coeficiente, element.dep_situacao, element.dep_acesso_api
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Departamento atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Departamento atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }    
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));
 
 exports.insert = function (objDepartamento){
 

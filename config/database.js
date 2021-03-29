@@ -92,7 +92,11 @@ function createPool() {
         database: databaseApi,
         user: bdUserApi,
         password: bdKeyApi,
-        ssl: false
+        ssl: false,
+        max: 100,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+
         // ,
         // statement_timeout: 30000,
         // query_timeout: 30000
@@ -103,6 +107,10 @@ function createPool() {
     pool.on("error", function(err, client) {
         console.error("**Falha ao tentar conectar com banco de dados da api.** ", err.message, err.stack);
     });
+
+    // console.log('Clientes existentes BD:', pool.totalCount);
+    // console.log('Ociosos no pool: BD', pool.idleCount);
+    // console.log('Fila de espera: BD', pool.waitingCount);
   
     return pool;
 };

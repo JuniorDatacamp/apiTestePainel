@@ -361,88 +361,80 @@ exports.delete = function(idProduto){
     });    
 };
 
-exports.update = function(objProduto){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function(objProduto){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < objProduto.length; ++i){                            
+                
+            docAtualizados.push(objProduto[i].pro_id);
 
-    objProduto.forEach(produto => {
+            const res = await client.query(updateProdutos, [
+                objProduto[i].pro_id, objProduto[i].pro_ean1, objProduto[i].pro_ean2, objProduto[i].pro_ean3, objProduto[i].pro_referencia, objProduto[i].cst_id, 
+                objProduto[i].naf_codfiscal, objProduto[i].dep_id, objProduto[i].for_id, objProduto[i].pro_unidade, objProduto[i].pro_quant_unid, 
+                objProduto[i].pro_estoque, objProduto[i].pro_estoqmin, objProduto[i].pro_vlrcusto, objProduto[i].pro_vlrprepos, objProduto[i].pro_vlrmedio, 
+                objProduto[i].pro_vlrprazo, objProduto[i].pro_ultcomp, objProduto[i].pro_ultvenda, objProduto[i].pro_qtdeultcom, objProduto[i].pro_dtaltpreco, 
+                objProduto[i].pro_descricao, objProduto[i].pro_margem, objProduto[i].pro_comissao, objProduto[i].pro_vlrvenda, objProduto[i].pro_observacoes, 
+                objProduto[i].pro_balanca, objProduto[i].pro_codbalanca, objProduto[i].pro_resumido, objProduto[i].pro_ita, objProduto[i].pro_validade, 
+                objProduto[i].pro_estoque_dep, objProduto[i].pro_vlrcusto_dep, objProduto[i].pro_ativo, objProduto[i].pro_custonota, objProduto[i].pro_vlratacado, 
+                objProduto[i].pro_margemprazo, objProduto[i].pro_vlrcalcsubst, objProduto[i].pro_vlraliqsubst, objProduto[i].pro_gaveta, objProduto[i].pro_icmscompra, 
+                objProduto[i].pro_icmsvenda, objProduto[i].pro_pesoliquido, objProduto[i].pro_pesobruto, objProduto[i].pro_codigonbm, objProduto[i].pro_vlrmedioant, 
+                objProduto[i].pro_origem, objProduto[i].cfs_id, objProduto[i].pro_descmax, objProduto[i].pro_datacadastro, objProduto[i].lab_id, objProduto[i].pro_vlrminimo, 
+                objProduto[i].pro_piscofins, objProduto[i].sec_id, objProduto[i].pro_promocao_dtini, objProduto[i].pro_promocao_dtfim, objProduto[i].pro_promocao_vlr, 
+                objProduto[i].pro_embunidade, objProduto[i].pro_cfopdentro, objProduto[i].pro_cfopfora, objProduto[i].pro_codfab1, objProduto[i].pro_codfab2, 
+                objProduto[i].pro_codfab3, objProduto[i].pro_codfab4, objProduto[i].pro_codfab5, objProduto[i].pro_codfab6, objProduto[i].pro_codfab7, 
+                objProduto[i].pro_codfab8, objProduto[i].pro_codfab9, objProduto[i].pro_codfab10, objProduto[i].pro_registro_ms, objProduto[i].pro_vlrcustoant, 
+                objProduto[i].pro_custonotaant, objProduto[i].pro_estoqmax, objProduto[i].pro_validade_balanca, objProduto[i].pro_codigo_dcb, 
+                objProduto[i].pro_dicriminacao_dcb, objProduto[i].pro_apres_concentracao, objProduto[i].pro_metragem, objProduto[i].pro_metragemfim, 
+                objProduto[i].pro_tipoviga, objProduto[i].pro_mva, objProduto[i].pro_mva_ajustada, objProduto[i].pro_aliqpis, objProduto[i].pro_aliqcofins, 
+                objProduto[i].pro_cod_origem, objProduto[i].pro_margemminimo, objProduto[i].pro_margematacado, objProduto[i].pro_reducao_base_calc, 
+                objProduto[i].pro_aliq_dest_interna, objProduto[i].pro_aliq_dest_externa, objProduto[i].pro_vlrmaximo, objProduto[i].pro_qtde_min_atac, 
+                objProduto[i].tpi_codigo, objProduto[i].pro_cod_ex, objProduto[i].pro_cod_gen, objProduto[i].stpc_codigo, objProduto[i].pro_pis_cofins_tipo_calculo, 
+                objProduto[i].pro_aliq_pis_valor, objProduto[i].pro_aliq_cofins_valor, objProduto[i].pro_nfe_tipo_item, objProduto[i].cfo_id_cupom, 
+                objProduto[i].pro_aliq_icms, objProduto[i].pro_aliq_csosn, objProduto[i].pro_calc_vlr_desc_icms, objProduto[i].pro_piscofins_sai, 
+                objProduto[i].pro_aliqpis_sai, objProduto[i].pro_aliqcofins_sai, objProduto[i].stpc_codigo_sai, objProduto[i].pro_pis_cofins_tipo_calculo_sai, 
+                objProduto[i].pro_aliq_pis_valor_sai, objProduto[i].pro_aliq_cofins_valor_sai, objProduto[i].fix, objProduto[i].sti_codigo, 
+                objProduto[i].pro_ipi_tipo_calculo, objProduto[i].pro_aliq_ipi, objProduto[i].pro_ipi_vlr_unidade, objProduto[i].nat_codigo, objProduto[i].nat_bc_codigo, 
+                objProduto[i].pro_ipi_vlr_base, objProduto[i].pro_dt_atualiza_cad, objProduto[i].mrc_id, objProduto[i].cst_id_fora, objProduto[i].sti_codigo_sai, 
+                objProduto[i].pro_ipi_tipo_calculo_sai, objProduto[i].pro_aliq_ipi_sai, objProduto[i].pro_ipi_vlr_unidade_sai, 
+                objProduto[i].pro_sngpc_classe_terapeutica, objProduto[i].pro_sngpc_tipounid, objProduto[i].anp_codigo, objProduto[i].pro_tipo_medicamento, 
+                objProduto[i].pro_tipo_ref_bc_st, objProduto[i].pro_veic_chassi, objProduto[i].pro_veic_renavam, objProduto[i].pro_veic_marca, 
+                objProduto[i].pro_veic_cor, objProduto[i].pro_veic_ano_fabric, objProduto[i].pro_veic_ano_modelo, objProduto[i].pro_medicamento, 
+                objProduto[i].pro_ultcomp_ant, objProduto[i].pro_qtdeultcom_ant, objProduto[i].pro_veic_combustivel, objProduto[i].pro_origem_ncm, 
+                objProduto[i].pro_aliquota_ncm, objProduto[i].pro_fracionado, objProduto[i].pro_codigo_ima, objProduto[i].cod_id, objProduto[i].pro_tipo_prod_ima, 
+                objProduto[i].pro_un_balanca, objProduto[i].pro_ppb, objProduto[i].pro_ppb_descricao, objProduto[i].pro_valor_pmc, objProduto[i].cco_id_pis, 
+                objProduto[i].cco_id_cofins, objProduto[i].pro_imp_catalogo, objProduto[i].pro_preco_fixo, objProduto[i].pro_especial_pda, objProduto[i].pro_composicao_if, 
+                objProduto[i].pro_composicao_st, objProduto[i].pro_composicao_ipi, objProduto[i].pro_composicao_frete, objProduto[i].pro_composicao_lucro, 
+                objProduto[i].pro_composicao_perc, objProduto[i].pro_composicao_venda, objProduto[i].pro_troca, objProduto[i].pro_usa_aliq_nat_fisc, 
+                objProduto[i].pro_composicao_despfixas, objProduto[i].pro_composicao_com_vend, objProduto[i].pro_composicao_com_entrega, 
+                objProduto[i].pro_aliquota_ncm_est, objProduto[i].pro_ncm_fonte, objProduto[i].pro_ncm_chave, objProduto[i].pro_composicao_custo, 
+                objProduto[i].pro_laje, objProduto[i].pro_ceramica, objProduto[i].un_cod_alter, objProduto[i].ces_codigo, objProduto[i].eqi_codigo, 
+                objProduto[i].pro_ncm_versao, objProduto[i].pro_item_inf_add, objProduto[i].pro_vlrprazo_ant, objProduto[i].pro_vlratacado_ant, 
+                objProduto[i].pro_vlrvenda_ant, objProduto[i].pro_ncm_vigencia, objProduto[i].sub_id, objProduto[i].pro_dtaltprecoant, 
+                objProduto[i].pro_cnpj_fabricante, objProduto[i].pro_codigo_beneficiario, objProduto[i].pro_producao, objProduto[i].pro_ean_trib, 
+                objProduto[i].pro_unidade_trib, objProduto[i].pro_quant_trib, objProduto[i].pro_tipo_estoque, objProduto[i].cli_id, objProduto[i].pro_perc_fcp, 
+                objProduto[i].pro_perc_fcp_st, objProduto[i].pro_perc_fcp_st_ant, objProduto[i].pro_icms_substituto, objProduto[i].pro_mt_isencao_anvisa, 
+                objProduto[i].pro_fpopular_valor, objProduto[i].pro_fpopular_qtde_embalagem, objProduto[i].pro_aliq_icms_desonerado, objProduto[i].mdi_codigo
+            ]);
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
+        };
 
-                ConexaoBanco.query(updateProdutos, [
-                    produto.pro_id, produto.pro_ean1, produto.pro_ean2, produto.pro_ean3, produto.pro_referencia, produto.cst_id, 
-                    produto.naf_codfiscal, produto.dep_id, produto.for_id, produto.pro_unidade, produto.pro_quant_unid, 
-                    produto.pro_estoque, produto.pro_estoqmin, produto.pro_vlrcusto, produto.pro_vlrprepos, produto.pro_vlrmedio, 
-                    produto.pro_vlrprazo, produto.pro_ultcomp, produto.pro_ultvenda, produto.pro_qtdeultcom, produto.pro_dtaltpreco, 
-                    produto.pro_descricao, produto.pro_margem, produto.pro_comissao, produto.pro_vlrvenda, produto.pro_observacoes, 
-                    produto.pro_balanca, produto.pro_codbalanca, produto.pro_resumido, produto.pro_ita, produto.pro_validade, 
-                    produto.pro_estoque_dep, produto.pro_vlrcusto_dep, produto.pro_ativo, produto.pro_custonota, produto.pro_vlratacado, 
-                    produto.pro_margemprazo, produto.pro_vlrcalcsubst, produto.pro_vlraliqsubst, produto.pro_gaveta, produto.pro_icmscompra, 
-                    produto.pro_icmsvenda, produto.pro_pesoliquido, produto.pro_pesobruto, produto.pro_codigonbm, produto.pro_vlrmedioant, 
-                    produto.pro_origem, produto.cfs_id, produto.pro_descmax, produto.pro_datacadastro, produto.lab_id, produto.pro_vlrminimo, 
-                    produto.pro_piscofins, produto.sec_id, produto.pro_promocao_dtini, produto.pro_promocao_dtfim, produto.pro_promocao_vlr, 
-                    produto.pro_embunidade, produto.pro_cfopdentro, produto.pro_cfopfora, produto.pro_codfab1, produto.pro_codfab2, 
-                    produto.pro_codfab3, produto.pro_codfab4, produto.pro_codfab5, produto.pro_codfab6, produto.pro_codfab7, 
-                    produto.pro_codfab8, produto.pro_codfab9, produto.pro_codfab10, produto.pro_registro_ms, produto.pro_vlrcustoant, 
-                    produto.pro_custonotaant, produto.pro_estoqmax, produto.pro_validade_balanca, produto.pro_codigo_dcb, 
-                    produto.pro_dicriminacao_dcb, produto.pro_apres_concentracao, produto.pro_metragem, produto.pro_metragemfim, 
-                    produto.pro_tipoviga, produto.pro_mva, produto.pro_mva_ajustada, produto.pro_aliqpis, produto.pro_aliqcofins, 
-                    produto.pro_cod_origem, produto.pro_margemminimo, produto.pro_margematacado, produto.pro_reducao_base_calc, 
-                    produto.pro_aliq_dest_interna, produto.pro_aliq_dest_externa, produto.pro_vlrmaximo, produto.pro_qtde_min_atac, 
-                    produto.tpi_codigo, produto.pro_cod_ex, produto.pro_cod_gen, produto.stpc_codigo, produto.pro_pis_cofins_tipo_calculo, 
-                    produto.pro_aliq_pis_valor, produto.pro_aliq_cofins_valor, produto.pro_nfe_tipo_item, produto.cfo_id_cupom, 
-                    produto.pro_aliq_icms, produto.pro_aliq_csosn, produto.pro_calc_vlr_desc_icms, produto.pro_piscofins_sai, 
-                    produto.pro_aliqpis_sai, produto.pro_aliqcofins_sai, produto.stpc_codigo_sai, produto.pro_pis_cofins_tipo_calculo_sai, 
-                    produto.pro_aliq_pis_valor_sai, produto.pro_aliq_cofins_valor_sai, produto.fix, produto.sti_codigo, 
-                    produto.pro_ipi_tipo_calculo, produto.pro_aliq_ipi, produto.pro_ipi_vlr_unidade, produto.nat_codigo, produto.nat_bc_codigo, 
-                    produto.pro_ipi_vlr_base, produto.pro_dt_atualiza_cad, produto.mrc_id, produto.cst_id_fora, produto.sti_codigo_sai, 
-                    produto.pro_ipi_tipo_calculo_sai, produto.pro_aliq_ipi_sai, produto.pro_ipi_vlr_unidade_sai, 
-                    produto.pro_sngpc_classe_terapeutica, produto.pro_sngpc_tipounid, produto.anp_codigo, produto.pro_tipo_medicamento, 
-                    produto.pro_tipo_ref_bc_st, produto.pro_veic_chassi, produto.pro_veic_renavam, produto.pro_veic_marca, 
-                    produto.pro_veic_cor, produto.pro_veic_ano_fabric, produto.pro_veic_ano_modelo, produto.pro_medicamento, 
-                    produto.pro_ultcomp_ant, produto.pro_qtdeultcom_ant, produto.pro_veic_combustivel, produto.pro_origem_ncm, 
-                    produto.pro_aliquota_ncm, produto.pro_fracionado, produto.pro_codigo_ima, produto.cod_id, produto.pro_tipo_prod_ima, 
-                    produto.pro_un_balanca, produto.pro_ppb, produto.pro_ppb_descricao, produto.pro_valor_pmc, produto.cco_id_pis, 
-                    produto.cco_id_cofins, produto.pro_imp_catalogo, produto.pro_preco_fixo, produto.pro_especial_pda, produto.pro_composicao_if, 
-                    produto.pro_composicao_st, produto.pro_composicao_ipi, produto.pro_composicao_frete, produto.pro_composicao_lucro, 
-                    produto.pro_composicao_perc, produto.pro_composicao_venda, produto.pro_troca, produto.pro_usa_aliq_nat_fisc, 
-                    produto.pro_composicao_despfixas, produto.pro_composicao_com_vend, produto.pro_composicao_com_entrega, 
-                    produto.pro_aliquota_ncm_est, produto.pro_ncm_fonte, produto.pro_ncm_chave, produto.pro_composicao_custo, 
-                    produto.pro_laje, produto.pro_ceramica, produto.un_cod_alter, produto.ces_codigo, produto.eqi_codigo, 
-                    produto.pro_ncm_versao, produto.pro_item_inf_add, produto.pro_vlrprazo_ant, produto.pro_vlratacado_ant, 
-                    produto.pro_vlrvenda_ant, produto.pro_ncm_vigencia, produto.sub_id, produto.pro_dtaltprecoant, 
-                    produto.pro_cnpj_fabricante, produto.pro_codigo_beneficiario, produto.pro_producao, produto.pro_ean_trib, 
-                    produto.pro_unidade_trib, produto.pro_quant_trib, produto.pro_tipo_estoque, produto.cli_id, produto.pro_perc_fcp, 
-                    produto.pro_perc_fcp_st, produto.pro_perc_fcp_st_ant, produto.pro_icms_substituto, produto.pro_mt_isencao_anvisa, 
-                    produto.pro_fpopular_valor, produto.pro_fpopular_qtde_embalagem, produto.pro_aliq_icms_desonerado, produto.mdi_codigo
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Produto(s) atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Produto(s) atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

@@ -1,6 +1,61 @@
 const Configuracao = require('../config/database');
 const format = require('pg-format');
 
+class itemVenda {
+        
+    constructor(body) {
+
+        this.itv_uuid               = body.itv_uuid,
+        this.itv_id                 = body.itv_id,
+        this.ven_uuid               = body.ven_uuid,
+        this.ven_data               = body.ven_data,
+        this.pro_id                 = body.pro_id,
+        this.itv_refer              = body.itv_refer,
+        this.itv_qtde               = body.itv_qtde,
+        this.itv_desconto           = body.itv_desconto,
+        this.itv_precovenda         = body.itv_precovenda,
+        this.itv_valortotal         = body.itv_valortotal,
+        this.itv_data               = body.itv_data,
+        this.itv_situacao           = body.itv_situacao,
+        this.itv_comissao           = body.itv_comissao,
+        this.pro_custoreal          = body.pro_custoreal,
+        this.pro_custo              = body.pro_custo,
+        this.itv_num_item           = body.itv_num_item,
+        this.itv_un                 = body.itv_un,
+        this.itv_tipo               = body.itv_tipo,
+        this.itv_observacao         = body.itv_observacao,
+        this.itv_descricao          = body.itv_descricao,
+        this.itv_vlrmedio           = body.itv_vlrmedio,
+        this.itv_trocado            = body.itv_trocado,
+        this.itd_id                 = body.itd_id,
+        this.itv_vlr_rateio_desc    = body.itv_vlr_rateio_desc,
+        this.mrc_id                 = body.mrc_id,
+        this.itv_num_pneu           = body.itv_num_pneu,
+        this.tir_id                 = body.tir_id,
+        this.itv_promocao           = body.itv_promocao,
+        this.pro_composicao_if      = body.pro_composicao_if,
+        this.pro_composicao_st      = body.pro_composicao_st,
+        this.pro_composicao_ipi     = body.pro_composicao_ipi,
+        this.pro_composicao_frete   = body.pro_composicao_frete,
+        this.pro_composicao_lucro   = body.pro_composicao_lucro,
+        this.pro_composicao_perc    = body.pro_composicao_perc,
+        this.pro_composicao_venda   = body.pro_composicao_venda,
+        this.pro_composicao_despfixas     = body.pro_composicao_despfixas,
+        this.pro_composicao_com_vend      = body.pro_composicao_com_vend,
+        this.pro_composicao_com_entrega   = body.pro_composicao_com_entrega,
+        this.pro_composicao_custo         = body.pro_composicao_custo,
+        this.itv_vlrfrete                 = body.itv_vlrfrete,
+        this.itv_data_inclusao            = body.itv_data_inclusao,
+        this.itv_vlr_descarga             = body.itv_vlr_descarga,
+        this.vdd_id                       = body.vdd_id
+    }
+}
+
+exports.itemVenda = function(objItemVenda){
+    
+    return new itemVenda(objItemVenda)    
+}
+
 /*
     "recebimento" é confirmação da retaguarda quando o pedido foi importado com sucesso.    
     
@@ -70,40 +125,22 @@ const updateItemVenda =
 const deleteItemVenda =
     ` delete from item_venda where itv_uuid in (%s) `;
 
-exports.insertApp = function insertApp(ObjItemVenda, venUUID){
+exports.SQLInsertApp = function (ObjItemVenda, venUUID){
 
-    return new Promise((resolve, reject) => {
+    var paramsItemVenda  = [];
+
+    ObjItemVenda.forEach(itemVenda => {
         
-        const ConexaoBanco   = Configuracao.conexao;
-        var paramsItemVenda  = [];
-
-        ObjItemVenda.forEach(itemVenda => {
-            
-            paramsItemVenda.push([
-                venUUID, itemVenda.pro_id, itemVenda.itv_refer, 
-                itemVenda.itv_descricao, itemVenda.itv_qtde, itemVenda.itv_un, itemVenda.itv_desconto,
-                itemVenda.itv_precovenda, itemVenda.itv_valortotal, itemVenda.itv_data_inclusao, 
-                itemVenda.ven_data, itemVenda.itv_promocao
-            ]);
-        });
-
-        var sql = format(insertItemVendaApp, paramsItemVenda);
-       
-        ConexaoBanco.query(sql, (error, results) => {
-            
-            if (error){
-                console.log('Erro ao inserir item venda. ', 'ven_uuid:', venUUID);
-                console.log(error);
-                const erroItemVenda = [error, venUUID];
-                return reject(erroItemVenda);
-            }
-            else{
-                console.log(`Item venda inserido com sucesso! ven_uuid: ${venUUID} Quantidade registros:`, results.rowCount, 'itens:', paramsItemVenda);
-                var itemVenda = results.rows;
-                return resolve(itemVenda);
-            }
-        });
+        paramsItemVenda.push([
+            venUUID, itemVenda.pro_id, itemVenda.itv_refer, 
+            itemVenda.itv_descricao, itemVenda.itv_qtde, itemVenda.itv_un, itemVenda.itv_desconto,
+            itemVenda.itv_precovenda, itemVenda.itv_valortotal, itemVenda.itv_data_inclusao, 
+            itemVenda.ven_data, itemVenda.itv_promocao
+        ]);
     });
+
+    var sql = format(insertItemVendaApp, paramsItemVenda);
+    return sql;
 };
 
 exports.getItemVenda = function getItemVenda(){
@@ -124,14 +161,17 @@ exports.getItemVenda = function getItemVenda(){
     });
 };
 
-exports.insert = function insert(ObjItemVenda){
+exports.insert = async function insert(ObjItemVenda){
 
-    return new Promise((resolve, reject) => {
-        
-        const ConexaoBanco  = Configuracao.conexao;
-        var paramsItemVenda = [];
+    const client = await Configuracao.conexao.connect();
+
+    try {
+        let paramsItemVenda = [];
+        let docInclusos = [];
 
         ObjItemVenda.forEach(itemVenda => {
+            
+            docInclusos.push(itemVenda.itv_id);    
             
             paramsItemVenda.push([
                 itemVenda.itv_id, itemVenda.ven_uuid, itemVenda.ven_data, itemVenda.pro_id, itemVenda.itv_refer, 
@@ -148,21 +188,24 @@ exports.insert = function insert(ObjItemVenda){
             ]);
         });
 
-        var sql = format(insertItemVenda, paramsItemVenda);
+        var sqlInsertItemVenda = format(insertItemVenda, paramsItemVenda);
        
-        ConexaoBanco.query(sql, (error, results) => {
-            
-            if (error){
-                console.log('Erro ao inserir item venda. '+ error);
-                return reject(error);
-            }
-            else{
-                console.log('Item venda inserido com sucesso! Quantidade registros:', results.rowCount);
-                var itemVenda = results.rows;
-                return resolve(itemVenda);
-            }
-        });
-    });
+        await client.query('BEGIN')
+
+        const res = await client.query(sqlInsertItemVenda, []);
+
+        console.log('Item venda inserido com sucesso! Quantidade registros:', res.rowCount, '\nIDs de item venda(s)! ITV_ID:', docInclusos);
+        await client.query('COMMIT');
+        //retornando para controller as vendas inseridas
+        return res.rows;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };
 
 exports.delete = function(idItemVenda){
@@ -187,53 +230,42 @@ exports.delete = function(idItemVenda){
     });
 };
 
-exports.update = function update(ObjItemVenda){
-    
-    const ConexaoBanco = Configuracao.conexao;
+exports.update = async function update(ObjItemVenda){
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    const client = await Configuracao.conexao.connect();
 
-    var arrayPromise = [];
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjItemVenda.length; ++i){
+            
+            docAtualizados.push(ObjItemVenda[i].itv_uuid); 
 
-    ObjItemVenda.forEach(element => {
+            const res = await client.query(updateItemVenda, [
+                ObjItemVenda[i].itv_uuid, ObjItemVenda[i].itv_id, ObjItemVenda[i].ven_uuid, ObjItemVenda[i].ven_data, ObjItemVenda[i].pro_id, ObjItemVenda[i].itv_refer, 
+                ObjItemVenda[i].itv_qtde, ObjItemVenda[i].itv_desconto, ObjItemVenda[i].itv_precovenda, ObjItemVenda[i].itv_valortotal, ObjItemVenda[i].itv_data, 
+                ObjItemVenda[i].itv_situacao, ObjItemVenda[i].itv_comissao, ObjItemVenda[i].pro_custoreal, ObjItemVenda[i].pro_custo, ObjItemVenda[i].itv_num_item, 
+                ObjItemVenda[i].itv_un, ObjItemVenda[i].itv_tipo, ObjItemVenda[i].itv_observacao, ObjItemVenda[i].itv_descricao, ObjItemVenda[i].itv_vlrmedio, 
+                ObjItemVenda[i].itv_trocado, ObjItemVenda[i].itd_id, ObjItemVenda[i].itv_vlr_rateio_desc, ObjItemVenda[i].mrc_id, ObjItemVenda[i].itv_num_pneu, 
+                ObjItemVenda[i].tir_id, ObjItemVenda[i].itv_promocao, ObjItemVenda[i].pro_composicao_if, ObjItemVenda[i].pro_composicao_st, 
+                ObjItemVenda[i].pro_composicao_ipi, ObjItemVenda[i].pro_composicao_frete, ObjItemVenda[i].pro_composicao_lucro,
+                ObjItemVenda[i].pro_composicao_perc, ObjItemVenda[i].pro_composicao_venda, ObjItemVenda[i].pro_composicao_despfixas, 
+                ObjItemVenda[i].pro_composicao_com_vend, ObjItemVenda[i].pro_composicao_com_entrega, ObjItemVenda[i].pro_composicao_custo,
+                ObjItemVenda[i].itv_vlrfrete, ObjItemVenda[i].itv_data_inclusao, ObjItemVenda[i].itv_vlr_descarga, ObjItemVenda[i].vdd_id
+            ]);
+        };
 
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateItemVenda, [
-                    element.itv_uuid, element.itv_id, element.ven_uuid, element.ven_data, element.pro_id, element.itv_refer, 
-                    element.itv_qtde, element.itv_desconto, element.itv_precovenda, element.itv_valortotal, element.itv_data, 
-                    element.itv_situacao, element.itv_comissao, element.pro_custoreal, element.pro_custo, element.itv_num_item, 
-                    element.itv_un, element.itv_tipo, element.itv_observacao, element.itv_descricao, element.itv_vlrmedio, 
-                    element.itv_trocado, element.itd_id, element.itv_vlr_rateio_desc, element.mrc_id, element.itv_num_pneu, 
-                    element.tir_id, element.itv_promocao, element.pro_composicao_if, element.pro_composicao_st, 
-                    element.pro_composicao_ipi, element.pro_composicao_frete, element.pro_composicao_lucro,
-                    element.pro_composicao_perc, element.pro_composicao_venda, element.pro_composicao_despfixas, 
-                    element.pro_composicao_com_vend, element.pro_composicao_com_entrega, element.pro_composicao_custo,
-                    element.itv_vlrfrete, element.itv_data_inclusao, element.itv_vlr_descarga, element.vdd_id
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Item venda atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;
+        console.log('Item venda atualizado com sucesso! UUID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }
 };

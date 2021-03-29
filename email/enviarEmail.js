@@ -181,7 +181,7 @@ exports.enviarVenda = function(numVenda){
 
             transporter.sendMail(mailOptions, function(error, info){
                 if (error) {
-                    console.log(error);
+                    console.log('Erro ao enviar email da venda, ped_id:', results.rows[0].ped_id);
                 }else{
                     console.log('Email enviado: '+ info.response);
                     // transporter.close();                    

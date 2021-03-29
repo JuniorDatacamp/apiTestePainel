@@ -102,21 +102,14 @@ exports.alterar = function(req, res){
     var promisesRegioes;
     promisesRegioes = regioesModel.update(arrayRegioes);
 
-    Promise.all(  
-        promisesRegioes
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Regiões atualizado com sucesso!');
-
+    promisesRegioes
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Regiões atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );    
+        });  
 };

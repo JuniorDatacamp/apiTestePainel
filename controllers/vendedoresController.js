@@ -140,21 +140,14 @@ exports.alterar = function(req, res){
     var promisesVendedor;
     promisesVendedor = vendedoresModel.update(arrayVendedor);
 
-    Promise.all(  
-        promisesVendedor
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Vendedor atualizado com sucesso!');
-
+    promisesVendedor
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Vendedor atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );    
+        });  
 };

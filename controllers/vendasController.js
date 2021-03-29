@@ -101,7 +101,7 @@ exports.inserirApp = function(req, res){
         res.status(400).json({
             mensagem: 'A requisição não está de acordo com o formato esperado. Verifique o JSON "vendas" no body que está sendo enviado.'
         });
-    }    
+    }
 
     if (!objVenda.itemvendas || objVenda.itemvendas.length === 0){
         res.status(500).json({
@@ -109,39 +109,32 @@ exports.inserirApp = function(req, res){
         });
     };
 
-    Promise.all([
+    //Verificando se a venda já existe no banco de dados
+    vendasModel.verificaVendaDuplicadasApp(objVenda.ven_cod_verificador)
+    .then(sucesso => {
+        //Inserindo venda no banco de dados
         vendasModel.insertApp(objVenda)
-    ])
-    .then(
-        (resultados) => {
-           
+        .then(resultados => {
+    
             //Enviando e-mail da venda
-            emails.enviarVenda(resultados[0]);
-
+            emails.enviarVenda(resultados);
+            
             res.status(200).json({
-                vendas: resultados[0]
+                vendas: resultados
             });
-        },
-        (erro) => {
-
-            //Tratamento se existir duplicidade de venda do app, retonar a venda para o aplicativo atualizar seus dados.
-            if ((erro[0].code == 23505) && (erro[0].constraint === 'unique_ven_cod_verificador')){                              
-
-                Promise.resolve(vendasModel.getVendaDuplicadasApp(erro[1].ven_cod_verificador))
-                .then(
-                    (resultados) => {
-                        res.status(409).json(resultados[0]);
-                    },
-                    (rejeitado) => {
-                        res.status(500).json(rejeitado);
-                    }
-                );
-
-            }else{
-                funcUtils.getMensagemErros(erro[0], res);
-            };
-        }
-    );
+        })
+        .catch(erro => {    
+            console.error(erro.stack)
+            funcUtils.getMensagemErros(erro, res);
+        });
+    },
+    rejeitado => {
+        //Retornando a venda se ela for duplicada no banco de dados     
+        res.status(409).json(rejeitado);
+    })
+    .catch(error => {
+        res.status(500).json(error);
+    })
 };
 
 exports.pesquisarTodos = function(req, res){
@@ -179,21 +172,16 @@ exports.inserir = function(req, res){
         });
     }
 
-    Promise.all([
-        vendasModel.insert(arrayVenda)
-    ])
-    .then(
-        (resultados) => {
-           
+    vendasModel.insert(arrayVenda)
+        .then(resultados => {
             res.status(200).json({
-                vendas: resultados[0]
-            });
-        },
-        (erro) => {
-            console.log(erro);
+                vendas: resultados
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };
 
 exports.deletar = function(req, res){
@@ -237,21 +225,14 @@ exports.alterar = function(req, res){
     var promisesVenda;
     promisesVenda = vendasModel.update(arrayVenda);
 
-    Promise.all(  
-        promisesVenda
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Venda(s) atualizado com sucesso!');
-
+    promisesVenda
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Venda(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

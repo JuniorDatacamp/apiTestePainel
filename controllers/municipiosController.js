@@ -74,23 +74,34 @@ exports.alterar = function(req, res){
     var promisesMunicipio;
     promisesMunicipio = municipiosModel.update(arrayMunicipio);
 
-    Promise.all(  
-        promisesMunicipio
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Municipio(s) atualizado com sucesso!');
-           
+    promisesMunicipio
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Municipio(s) atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });    
+
+    // Promise.all(  
+    //     promisesMunicipio
+    // )
+    // .then(
+    //     (resultados) => {
+
+    //         console.log('Municipio(s) atualizado com sucesso!');
+           
+    //         res.status(200).json({
+    //             mensagem: 'Municipio(s) atualizado com sucesso!'
+    //         });
+    //     },
+    //     (erro) => {
+    //         console.log(erro);
+    //         funcUtils.getMensagemErros(erro, res);
+    //     }
+    // );
 };
 
 exports.inserir = function(req, res){

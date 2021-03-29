@@ -106,21 +106,14 @@ exports.alterar = function(req, res){
     var promisesItemPromocao;
     promisesItemPromocao = itemPromocoesModel.update(arrayItemPromocao);
 
-    Promise.all(  
-        promisesItemPromocao
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Item de promoção atualizado com sucesso!');
-
+    promisesItemPromocao
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Item de promoção atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

@@ -131,21 +131,14 @@ exports.alterar = function(req, res){
     var promisesTipoPagto;
     promisesTipoPagto = tipoPagtosModel.update(arrayTipoPagto);
 
-    Promise.all(  
-        promisesTipoPagto
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Tipo de Pagamento atualizado com sucesso!');
-
+    promisesTipoPagto
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Tipo de Pagamento atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );    
+        });  
 };

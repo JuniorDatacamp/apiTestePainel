@@ -105,21 +105,14 @@ exports.alterar = function(req, res){
     var promisesRestricoes;
     promisesRestricoes = restricoesModel.update(arrayRestricoes);
 
-    Promise.all(  
-        promisesRestricoes
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Restrições atualizado com sucesso!');
-
+    promisesRestricoes
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Restrições atualizado com sucesso!'
-            });
-        },
-        (erro) => {
-            console.log(erro);
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
             funcUtils.getMensagemErros(erro, res);
-        }
-    );
+        });
 };

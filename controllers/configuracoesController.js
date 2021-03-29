@@ -22,7 +22,9 @@ class configuracao {
         this.par_venda_inicio                = body.par_venda_inicio,
         this.par_palm_preco                  = body.par_palm_preco,
         this.par_altera_vlr_unit_app         = body.par_altera_vlr_unit_app
-        this.par_vinculo_clientes_vendedor   = body.par_vinculo_clientes_vendedor
+        this.par_vinculo_clientes_vendedor   = body.par_vinculo_clientes_vendedor,
+        this.par_codigo_cli_na_frente        = body.par_codigo_cli_na_frente,
+        this.par_codigo_produto_na_frente    = body.par_codigo_produto_na_frente
     }
 }
 

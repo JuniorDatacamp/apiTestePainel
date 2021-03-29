@@ -89,44 +89,36 @@ exports.delete = function(idTipoDocto){
     });    
 };
 
-exports.update = function update(ObjTipoDocto){
+exports.update = async function update(ObjTipoDocto){
 
-    const ConexaoBanco = Configuracao.conexao;
+    const client = await Configuracao.conexao.connect();
 
-    ConexaoBanco.query('begin', (errorBegin, resultsBegin) => {
-    });
+    try {        
+        let docAtualizados = [];
+        
+        await client.query('BEGIN')
+        
+        for (var i = 0; i < ObjTipoDocto.length; ++i){                            
+                
+            docAtualizados.push(ObjTipoDocto[i].tip_id);
 
-    var arrayPromise = [];
+            const res = await client.query(updateTipoDocto, [
+                ObjTipoDocto[i].tip_id, ObjTipoDocto[i].tip_descricao, 
+                ObjTipoDocto[i].tip_indicador_de_titulo
+            ]);
+        };
 
-    ObjTipoDocto.forEach(element => {
-
-        arrayPromise.push(
-            new Promise((resolve, reject) => {
-
-                ConexaoBanco.query(updateTipoDocto, [
-                    element.tip_id, element.tip_descricao, element.tip_indicador_de_titulo
-                ], (error, results) => {
-
-                    if (error){
-                        return reject(error);
-                    }else{
-                        return resolve({
-                            mensagem: 'Tipos Documentos atualizado com sucesso!',
-                            registros: results.rowCount
-                        });
-                    }
-                });
-            })
-        );
-    });
-
-    Promise.all(arrayPromise).then(
-        ConexaoBanco.query('commit', (error, results) => {
-        })
-    ).catch(
-        ConexaoBanco.query('rollback', (error, results) => {
-        })
-    );
-
-    return arrayPromise;    
+        console.log('Tipos Documentos atualizado com sucesso! ID:', docAtualizados);
+        await client.query('COMMIT');
+        return true;
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        // Certifique-se de liberar o cliente antes de qualquer tratamento de erro,
+        // apenas no caso de o próprio tratamento de erros gerar um erro.
+        client.release()
+    }   
 };
+// Catch foi passado para o controller resolver e retornar o erro.
+// ().catch(err => console.error(err.stack));

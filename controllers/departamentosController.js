@@ -77,25 +77,16 @@ exports.alterar = function(req, res){
     var promisesDepto;
     promisesDepto = departamentosModel.update(arrayDepto);
 
-    Promise.all(
-        promisesDepto
-    )
-    .then(
-        (resultados) => {
-
-            console.log('Departamento(s) atualizado com sucesso!');
-
+    promisesDepto
+        .then(resultados => {
             res.status(200).json({
                 mensagem: 'Departamento(s) atualizado com sucesso!'
-            });
-        }
-    )
-    .catch(
-        (erro) => {
-            console.log(erro);
-            funcUtils.getMensagemErros(erro, res);            
-        }
-    )
+            });            
+        })
+        .catch(erro => {
+            console.error(erro.stack)
+            funcUtils.getMensagemErros(erro, res);
+        });
 };
 
 exports.inserir = function(req, res){
