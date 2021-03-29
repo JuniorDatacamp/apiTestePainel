@@ -92,7 +92,7 @@ function createPool() {
         database: databaseApi,
         user: bdUserApi,
         password: bdKeyApi,
-        ssl: false,
+        ssl: true,
         max: 100,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
