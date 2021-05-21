@@ -73,23 +73,27 @@ const updateReceber =
 
 exports.getReceberApp = function(package){
 
-    return new Promise((resolve, reject) => {        
+    return new Promise((resolve, reject) => {
 
-        const ConexaoBanco = Configuracao.conexao;
-        var params;
-
-        (package.vinculoClientesVendedor) ? params = package.codVendedor : params = '%';
-
-        console.log('Consultando receber...');        
-        ConexaoBanco.query(sqlReceberApp+sqlOrderby, [params], function(error, results){
-            if(error){
-                return reject(error);
-            }
-            else{
-                const receber = results.rows;
-                return resolve(receber);
-            }
-        });
+        if (package.enviarReceberCliente){
+            const ConexaoBanco = Configuracao.conexao;
+            var params;
+    
+            (package.vinculoClientesVendedor) ? params = package.codVendedor : params = '%';
+    
+            console.log('Consultando receber...');        
+            ConexaoBanco.query(sqlReceberApp+sqlOrderby, [params], function(error, results){
+                if(error){
+                    return reject(error);
+                }
+                else{
+                    const receber = results.rows;
+                    return resolve(receber);
+                }
+            });
+        }else{
+            return resolve([]);
+        }        
     });    
 };
 

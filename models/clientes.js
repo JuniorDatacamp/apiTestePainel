@@ -334,7 +334,7 @@ exports.retornarClientesApp = function retornarClientesApp(package){
                         resolve(objRetornoClientes);
                     }else{
                         //Não existe atualização dos dados.
-                        resolve([]);                            
+                        resolve([]);
                     }
                 },
                 (erro) => {                        

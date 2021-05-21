@@ -36,6 +36,21 @@ class venda {
 };
 
 const Configuracao = require('../config/database');
+
+const sqlSituacaoVendaApp = 
+    `  select
+            ven_uuid, ped_id, ven_situacao,
+            case
+                when ven_id isnull then 'N'
+            else 'S'
+            end as recebimento,
+            'S' as enviado
+        from
+            venda
+        where
+            ven_uuid in (%s)
+    `;
+
 const sqlVendasApp = 
     `   select
             x.ven_uuid, ped_id, x.vdd_id, tpg_id, x.ven_data,
@@ -141,7 +156,30 @@ const SqlDeleteVenda =
     " delete from venda where ven_uuid in (%s) ";
 
 const sqlOrderby =
-    ' order by ped_id ';    
+    ' order by ped_id ';
+
+exports.getSituacaoVendasApp = function(VenUUID){
+
+    return new Promise((resolve, reject) => {
+
+        const ConexaoBanco = Configuracao.conexao;        
+
+        const sqlVenda = format(sqlSituacaoVendaApp, VenUUID);
+
+        console.log('Verificando situação das vendas...');
+        ConexaoBanco.query(sqlVenda, (error, results) => {
+        
+            if (error){
+                console.log('Erro ao verificar situação das vendas...');
+                return reject(error);
+            }else{  
+                let vendas = results.rows;                
+
+                return resolve(vendas);
+            };            
+        });
+    });
+};
 
 //utilizar para app
 exports.getVendasApp = function(package){

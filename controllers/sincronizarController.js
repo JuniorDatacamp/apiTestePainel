@@ -26,7 +26,8 @@ exports.sincronizandoApp = function(req, res, isFull){
         codVendedor : (jwt.getToken(res, token, tipoToken.app).iss),
         pacotefull : isFull,
         data : req.params.ultimasincronizacao,
-        vinculoClientesVendedor: 'S'
+        vinculoClientesVendedor: 'S',
+        enviarReceberCliente: 'N'
     };
 
     console.log('Sincronizando Aplicativo: Full: ' + packageSync.pacotefull);
@@ -39,13 +40,14 @@ exports.sincronizandoApp = function(req, res, isFull){
 
             //Verificando se data de atualização é maior, é necessário ficar aqui a validação pois
             //pelo sql sempre iria trazer alterações de configurações na sync.
-            const dtAtualizacaoApp = moment(packageSync.data, "YYYY-MM-DD[T]HH:mm:ss").utc(true).toDate();            
+            const dtAtualizacaoApp = moment(packageSync.data, "YYYY-MM-DD[T]HH:mm:ss").utc(true).toDate();
 
             if (moment(string(config.par_dt_ultima_atualizacao)).isAfter(dtAtualizacaoApp) || (packageSync.pacotefull)) {
                 jsonConfiguracao = config
             };
 
             packageSync.vinculoClientesVendedor = (config.par_vinculo_clientes_vendedor === 'S') ? true : false;
+            packageSync.enviarReceberCliente    = (config.par_exp_rec_pda === 'S') ? true : false;
 
             Promise.all([
                 vendedores.retornarVendedorApp(packageSync),

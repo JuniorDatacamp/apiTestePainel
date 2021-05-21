@@ -68,6 +68,33 @@ class venda {
     }
 }
 
+exports.statusVenda = function(req, res){
+
+    const {ven_uuid} = req.query;
+
+    if (!ven_uuid){
+        res.status(200).json('Parametro ven_uuid não informado!' );
+    }
+
+    Promise.all([      
+        vendasModel.getSituacaoVendasApp(ven_uuid)
+    ])
+    .then(
+        (resultados) => {
+           
+            console.log(resultados[0]);
+            
+            res.status(200).json(
+                resultados[0]
+            );
+        },
+        (erro) => {
+            console.log(erro);
+            funcUtils.getMensagemErros(erro, res);
+        }
+    );
+};
+
 exports.pesquisarbyVendedor = function(req, res){
 
     const tipoToken = jwt.getTipoToken();
