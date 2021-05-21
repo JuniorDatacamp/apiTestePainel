@@ -276,10 +276,10 @@ router.route('/tipospagtoscliente/:pesquisa')
 /******Vendas******/
 router.route('/vendas/app')
 		.post(token.validarTokenApp, vendas.inserirApp)
-		.get(token.validarTokenApp, vendas.pesquisarbyVendedor)		
+		.get(token.validarTokenApp, vendas.pesquisarbyVendedor)	
 
 router.route('/vendas/status')
-		.get(vendas.statusVenda)
+		.get(token.validarTokenApp, vendas.statusVenda)
 
 router.route('/vendas')
 		.post(token.validarTokenRetaguarda, vendas.inserir)
