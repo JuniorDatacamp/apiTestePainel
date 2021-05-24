@@ -71,13 +71,19 @@ class venda {
 exports.statusVenda = function(req, res){
 
     const {ven_uuid} = req.query;
+    
+    try {
+        var UUIDSemAspas = JSON.parse(ven_uuid);        
+    } catch (error) {
+        res.status(400).json('Formato de parâmetro inválido!');
+    }    
 
     if (!ven_uuid){
         res.status(200).json('Parametro ven_uuid não informado!' );
     }
 
     Promise.all([      
-        vendasModel.getSituacaoVendasApp(ven_uuid)
+        vendasModel.getSituacaoVendasApp(UUIDSemAspas)
     ])
     .then(
         (resultados) => {
